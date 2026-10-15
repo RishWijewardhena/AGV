@@ -1,0 +1,6 @@
+repositories:
+  naviq_mts160_ros2:
+    type: git
+    url: https://github.com/naviq-ch/naviq_mts160_ros2.git
+    version: ee8c5f9ca223e7e2d9cb38a563ad967039e23acf
+

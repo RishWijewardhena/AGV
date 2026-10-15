@@ -1,0 +1,11 @@
+AGENTS.md
+CLAUDE.md
+test/
+ros2_ws/build/
+ros2_ws/install/
+ros2_ws/log/
+ros2_ws/src/naviq_mts160_ros2/
+ros2_ws/agv_sim.rviz
+ros2_ws/src/agv_sim/agv_sim/__pycache__/
+ros2_ws/src/agv_sim/resource
+
