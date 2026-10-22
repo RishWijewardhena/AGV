@@ -1,0 +1,23 @@
+# Commissioning defaults, not a calibrated hardware configuration.
+motor_node:
+  ros__parameters:
+    enable_motors: false
+    port: /dev/zlac
+    node_id: 1
+    wheel_radius: 0.0655  # 131 mm diameter, direct-drive hub motors.
+    wheel_separation: 0.0  # REQUIRED: measured distance between drive-wheel centres, metres.
+    left_direction: 0     # REQUIRED: +1 or -1, verified with wheels lifted.
+    right_direction: 0    # REQUIRED: +1 or -1, verified with wheels lifted.
+    max_rpm: 10.0         # Low commissioning limit, not a motor rating.
+    command_timeout: 0.3  # Seconds without a fresh /cmd_vel -> zero RPM.
+
+line_follower:
+  ros__parameters:
+    use_sim_time: false
+    speed: 0.1
+    # Set to a measured real-site route map before running station missions.
+    route_map_file: ''
+
+obstacle_stop:
+  ros__parameters:
+    use_sim_time: false
