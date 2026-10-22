@@ -5,11 +5,13 @@ from geometry_msgs.msg import Twist , TransformStamped
 from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker,MarkerArray
 from geometry_msgs.msg import Point
-from rclpy.qos import QoSProfile,DurabilityPolicy,ReliabilityPolicy	
-from agv_sim.tape_map import y_fork
+from rclpy.qos import QoSProfile,DurabilityPolicy
 import numpy as np
-from std_msgs.msg import UInt16,ColorRGBA
-from agv_sim.tape_map import y_fork, to_segments,dist_to_tape
+from std_msgs.msg import ColorRGBA
+from agv_sim.tape_map import TAPE_WIDTH, MARKER_SIZE, START_POSE, station_loop, to_segments,read_mts160 ,marker_under_sensor
+from naviq_msgs.msg import TrackDetection , Navicode
+
+
 
 
 class Sim(Node):
@@ -20,7 +22,9 @@ class Sim(Node):
 		self.dt=0.01
 		self.last_cmd=self.get_clock().now()
 		self.cmd_timeout=0.5
-		self.tape_map=y_fork()
+		self.tape_map, self.stations = station_loop()
+		self.x, self.y, self.th = START_POSE
+
 		qos=QoSProfile(depth=1,durability=DurabilityPolicy.TRANSIENT_LOCAL)
 		self.tape_pub=self.create_publisher(MarkerArray,'tape_map',qos)
 		self.publish_tape_map()
@@ -29,10 +33,18 @@ class Sim(Node):
 		self.create_timer(self.dt,self.step)
 		self.A, self.B = to_segments(self.tape_map)
 		self.sensor_x = 0.25                                  # m ahead of the axle
-		self.cell_off = (7.5 - np.arange(16)) * 0.01          # lateral offsets, +left
-		self.tape_half = 0.015
-		self.cells_pub = self.create_publisher(UInt16, 'tape_cells', 10)
-		self.cells_on = np.zeros(16, dtype=bool)
+		self.track_pub = self.create_publisher(TrackDetection, 'mts160/track', 10)
+		self.reading = None
+
+		self.nav_pub = self.create_publisher(Navicode, 'mts160/navicode', 10)
+		self.nav_code = 0
+		self.nav_counter = 0
+		self.nav_new = False
+		self.over_tag = None          # name of the station whose marker is under the sensor
+		self.create_timer(0.1, self.publish_navicode)   # 10 Hz, like TPDO3
+
+
+
 		self.sensor_pub = self.create_publisher(Marker, 'sensor_markers', 10)
 		self.create_timer(0.05, self.publish_sensor)   # 20 Hz for RViz
 
@@ -45,11 +57,37 @@ class Sim(Node):
 			m.header.frame_id='odom'
 			m.ns,m.id='tape',i
 			m.type,m.action=Marker.LINE_STRIP,Marker.ADD
-			m.scale.x=0.03 #30mm tape
+			m.scale.x=TAPE_WIDTH
 			m.color.r,m.color.g,m.color.b,m.color.a=1.0,0.8,0.0,1.0
 			m.pose.orientation.w=1.0
-			m.points =[Point(x=x,y=y,z=0.0) for x,y in line]
+			m.points =[Point(x=float(x),y=float(y),z=0.0) for x,y in line]
 			arr.markers.append(m)
+
+		for k, (name,st) in enumerate(self.stations.items()):
+			mk = Marker()
+			mk.header.frame_id = 'odom'
+			mk.ns, mk.id = 'marker', k
+			mk.type, mk.action = Marker.CUBE, Marker.ADD
+			mk.pose.position.x, mk.pose.position.y = float(st['marker'][0]), float(st['marker'][1])
+			mk.pose.orientation.w = 1.0
+			mk.scale.x = mk.scale.y = MARKER_SIZE
+			mk.scale.z = 0.01
+			mk.color.r, mk.color.g, mk.color.b, mk.color.a = 1.0, 0.1, 0.1, 1.0
+			arr.markers.append(mk)
+			label = Marker()
+			label.header.frame_id = 'odom'
+			label.ns, label.id = 'label', k
+			label.type, label.action = Marker.TEXT_VIEW_FACING, Marker.ADD
+			label.pose.position.x = float(st['tag'][0])
+			label.pose.position.y = float(st['tag'][1])
+			label.pose.position.z = 0.4            # float above the floor
+			label.pose.orientation.w = 1.0
+			label.scale.z = 0.3                    # text height (m)
+			label.color.r = label.color.g = label.color.b = label.color.a = 1.0
+			label.text = f"{name} ({st['code']})"
+			arr.markers.append(label)
+
+
 		self.tape_pub.publish(arr)
 
 
@@ -81,34 +119,78 @@ class Sim(Node):
 
 	def read_sensor(self):
 
-		c,s=math.cos(self.th),math.sin(self.th)
-		sx=self.x+self.sensor_x*c
-		sy=self.y+self.sensor_x*s
+		self.reading=read_mts160(self.x,self.y,self.th,self.A,self.B,self.sensor_x)
+		msg=TrackDetection()
+		msg.header.stamp=self.get_clock().now().to_msg()
+		msg.header.frame_id = 'mts160_link'
+		if self.reading is not None:
+			lp, la, rp, ra = self.reading
+			msg.left.position_mm, msg.left.angle_deg = float(lp), float(la)
+			msg.right.position_mm, msg.right.angle_deg = float(rp), float(ra)
+			msg.strength = TrackDetection.STRENGTH_STRONG
+			msg.tape_detected = True
+			msg.single_track = (lp == rp and la == ra)
 
-		#left of the robot is(-sin.cos)
-		pts=np.stack([sx-self.cell_off*s,sy+self.cell_off*c],axis=1)
-		on=dist_to_tape(pts,self.A,self.B)<self.tape_half
-		word=sum(1<<i for i in range(16) if on[i])
-		msg=UInt16()
-		msg.data=word
-		self.cells_pub.publish(msg)
-		self.cells_on=on
+			diff = ra - la                       # advisory flags, as defined in the .msg file
+			msg.fork = 10 <= diff <= 45
+			msg.merge = -45 <= diff <= -10
+
+		over = None
+		for name, st in self.stations.items():
+			side = marker_under_sensor(self.x, self.y, self.th, *st['marker'], self.sensor_x)
+			if side == 'left':
+				msg.left_marker = True
+			elif side == 'right':
+				msg.right_marker = True
+			if side:
+				over = name
+		if self.over_tag and over is None:          # just left a marker: "decode" it
+			self.nav_code = self.stations[self.over_tag]['code']
+			self.nav_counter = (self.nav_counter + 1) % 256
+			self.nav_new = True
+			self.get_logger().info(f'Navicode {self.nav_code} ({self.over_tag})')
+		self.over_tag = over
+
+
+		self.track_pub.publish(msg)
+
+	def publish_navicode(self):
+		msg = Navicode()
+		msg.header.stamp = self.get_clock().now().to_msg()
+		msg.header.frame_id = 'mts160_link'
+		msg.code = self.nav_code
+		msg.counter = self.nav_counter
+		msg.is_new = self.nav_new
+		self.nav_new = False                          # only the first message after a new code
+		self.nav_pub.publish(msg)
+
+
 
 	def publish_sensor(self):
 		m = Marker()
 		m.header.frame_id = 'base_link'
 		m.header.stamp = self.get_clock().now().to_msg()
 		m.ns, m.id = 'sensor', 0
-		m.type, m.action = Marker.POINTS, Marker.ADD
-		m.scale.x = m.scale.y = 0.008
+		m.type, m.action = Marker.LINE_LIST, Marker.ADD
+		m.scale.x = 0.006
 		m.pose.orientation.w = 1.0
-		for i in range(16):
-			m.points.append(Point(x=self.sensor_x, y=float(self.cell_off[i]), z=0.01))
-			if self.cells_on[i]:
-				m.colors.append(ColorRGBA(r=0.0, g=1.0, b=0.0, a=1.0))   # on: green
-			else:
-				m.colors.append(ColorRGBA(r=0.5, g=0.5, b=0.5, a=1.0))   # off: grey
+		m.color = ColorRGBA(r=0.6, g=0.6, b=0.6, a=1.0)
+		m.points = [Point(x=self.sensor_x, y=0.08, z=0.01), Point(x=self.sensor_x, y=-0.08, z=0.01)]
 		self.sensor_pub.publish(m)
+
+		d = Marker()
+		d.header = m.header
+		d.ns, d.id = 'sensor', 1
+		d.type, d.action = Marker.POINTS, Marker.ADD
+		d.scale.x = d.scale.y = 0.015
+		d.pose.orientation.w = 1.0
+		if self.reading is not None:
+			lp, _, rp, _ = self.reading
+			# MTS +right -> ROS +left: y = -mm / 1000
+			d.points = [Point(x=self.sensor_x, y=-lp / 1000, z=0.02), Point(x=self.sensor_x, y=-rp / 1000, z=0.02)]
+			d.colors = [ColorRGBA(r=0.2, g=0.4, b=1.0, a=1.0), ColorRGBA(r=1.0, g=0.2, b=0.2, a=1.0)]
+		self.sensor_pub.publish(d)
+
 
 
 
