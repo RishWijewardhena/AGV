@@ -2,7 +2,7 @@
 
 An automated guided vehicle (AGV) that follows magnetic floor tape, drives into a trolley, locks onto it, tows it to another station and releases it.
 
-The software runs on **ROS 2 Jazzy** on **Ubuntu 24.04**, with a **Raspberry Pi 4B** on the robot. The project is at an early stage. There is a kinematic simulation, but no code that drives the real hardware yet.
+The software targets **ROS 2 Jazzy** on **Ubuntu 24.04**, with a **Raspberry Pi 4B** on the robot. Shared control is separate from the kinematic/Gazebo simulators. A small motor wrapper in `agv_bringup` is available for commissioning; the I2C ultrasonic driver is not implemented yet.
 
 ## How it works
 
@@ -24,7 +24,9 @@ AGV/
 └── ros2_ws/             ROS 2 workspace
     ├── agv.repos        third-party ROS packages, pinned to exact commits (see below)
     └── src/
-        ├── agv_sim/             our package: tape-following simulation
+        ├── agv_control/         shared follower, obstacle stop, mission planner and route config
+        ├── agv_sim/             simulated sensors, kinematic/Gazebo worlds and simulation launch
+        ├── agv_bringup/         hardware-startup scaffold (not a complete robot stack)
         └── naviq_mts160_ros2/   Naviq's MTS160 driver and naviq_msgs (fetched, not committed)
 ```
 
@@ -48,14 +50,17 @@ Datasheets and manuals for all of these are in [docs/](docs/). Pinouts, protocol
 
 ## Software
 
+### `agv_control`: shared behaviour
+
+The follower, obstacle-stop controller, and mission planner are shared between simulation and hardware. Route planning reads `agv_control/config/station_loop.json` rather than importing simulated tape geometry. See [agv_control/README.md](ros2_ws/src/agv_control/README.md) for interfaces and remaining hardware-compatibility work.
+
 ### `agv_sim`: simulation
 
-A lightweight simulation without a physics engine, displayed in RViz. It contains:
+`sim_node` provides the lightweight RViz simulation. Gazebo supplies physical motion with a virtual MTS160 and four ultrasonic approximations. Simulation launches start the appropriate shared nodes from `agv_control`. See [agv_sim/README.md](ros2_ws/src/agv_sim/README.md).
 
-- `sim_node`: moves a differential-drive robot from `/cmd_vel`, publishes TF `odom → base_link`, draws the tape layout, and simulates the guide sensor.
-- `line_follower`: PD steering from the guide sensor to `/cmd_vel`, choosing a side at each fork.
+### `agv_bringup`: real-robot startup scaffold
 
-The simulated sensor is being changed to publish the same `naviq_msgs` messages as the real MTS160 driver, so the same follower code can run on the robot. See [ros2_ws/src/agv_sim/README.md](ros2_ws/src/agv_sim/README.md) for the nodes, topics, parameters and progress.
+Holds `robot.launch.py`, commissioning configuration, the copied `ZLAC8015D.py` library, and its small `/cmd_vel` wrapper. It starts only the obstacle-stop node by default; motors and the follower are disabled. Hardware commissioning is still required. See [agv_bringup/README.md](ros2_ws/src/agv_bringup/README.md).
 
 ### `naviq_mts160_ros2`: sensor driver (third party)
 
@@ -96,20 +101,28 @@ colcon build --symlink-install --packages-up-to agv_sim
 source install/setup.bash
 ```
 
-- `--packages-up-to agv_sim` builds `agv_sim` and its dependencies (including `naviq_msgs`).
+- `--packages-up-to agv_sim` builds simulation and its dependencies, including `agv_control` and `naviq_msgs`.
+- `--packages-up-to agv_bringup` builds the hardware-startup scaffold and shared control without `agv_sim`.
 - With `--symlink-install`, edits to Python files take effect when you restart the node. A change to `setup.py`, such as adding a new node, still needs a rebuild.
 
 ### 4. Run the simulation
 
-In separate terminals, each with the workspace sourced:
+With the workspace sourced, run either simulation:
 
 ```bash
-ros2 run agv_sim sim_node
-ros2 run agv_sim line_follower --ros-args -p choice:=left
-rviz2
+ros2 launch agv_sim sim.launch.py targets:="[S1,S3]"
+# Or, in a separate run:
+ros2 launch agv_sim gazebo.launch.py
 ```
 
-In RViz, set **Fixed Frame** to `odom` and add **TF**, **MarkerArray** on `/tape_map` (Durability: Transient Local) and **Marker** on `/sensor_markers`.
+The Gazebo launch includes obstacle stopping. Start its shared follower in another sourced terminal:
+
+```bash
+ros2 run agv_control line_follower --ros-args -p speed:=0.1 \
+  -p use_sim_time:=true -r cmd_vel:=/cmd_vel_raw
+```
+
+The Gazebo world currently has a straight tape strip; station missions still use the kinematic simulation.
 
 ## Setting up the real MTS160 sensor
 
@@ -142,9 +155,13 @@ If the CANable runs slcan firmware rather than candleLight, it appears as `/dev/
 
 - [x] Kinematic tape-following simulation with forks
 - [x] Naviq driver pinned with vcstool
-- [ ] Simulated sensor publishes `naviq_msgs` like the real MTS160
-- [ ] Station markers, routes and missions in simulation
+- [x] Simulated sensor publishes `naviq_msgs` like the real MTS160
+- [x] Station markers, routes and missions in the kinematic simulation
+- [x] Separate shared control, simulation, and hardware-startup packages
+- [ ] Station missions in Gazebo (currently a straight-strip world)
 - [ ] Bring up the MTS160 over CAN on the Pi
-- [ ] Motor driver node (ZLAC8015D over Modbus RTU) with encoder odometry
-- [ ] Measure track width and build the robot URDF
+- [x] Small ZLAC8015D motor wrapper in `agv_bringup`, offline tested and disabled by default
+- [ ] Motor hardware commissioning and encoder odometry
+- [x] Import the CAD URDF and STL meshes into `agv_sim`
+- [ ] Measure wheel track and validate the imported URDF for Gazebo physics
 - [ ] Trolley lock control, safety sensors and status LEDs
