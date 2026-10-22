@@ -1,0 +1,1538 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com)
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot
+  name="AGV Design.SLDASM">
+  <link
+    name="Chassis_link">
+    <inertial>
+      <origin
+        xyz="-0.00204754666856201 0.000523252777419006 0.0701906232077998"
+        rpy="0 0 0" />
+      <mass
+        value="4.4873383750616" />
+      <inertia
+        ixx="0.0340572671168093"
+        ixy="1.11955880757761E-07"
+        ixz="4.51574828074295E-07"
+        iyy="0.0661291050864393"
+        iyz="1.04767889951191E-07"
+        izz="0.0977577573895961" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/Chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/Chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <link
+    name="FR_castor_link">
+    <inertial>
+      <origin
+        xyz="-0.0055232 -3.4135E-07 -0.010617"
+        rpy="0 0 0" />
+      <mass
+        value="0.011291" />
+      <inertia
+        ixx="4.0611E-06"
+        ixy="3.7811E-11"
+        ixz="-8.6938E-07"
+        iyy="3.8327E-06"
+        iyz="-9.2004E-11"
+        izz="4.4634E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FR_castor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.29412 0.29412 0.29412 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FR_castor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FR_castor_joint"
+    type="continuous">
+    <origin
+      xyz="0.295 -0.175 -0.01065"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="FR_castor_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="FR_castor_wheel_link">
+    <inertial>
+      <origin
+        xyz="1.11022302462516E-16 0.022 -6.93889390390723E-18"
+        rpy="0 0 0" />
+      <mass
+        value="0.0472944068607781" />
+      <inertia
+        ixx="9.50735464480307E-06"
+        ixy="1.47072103737068E-20"
+        ixz="-1.32072345505292E-21"
+        iyy="1.4188378350207E-05"
+        iyz="-2.07500445385506E-22"
+        izz="9.50735464480308E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FR_castor_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FR_castor_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FR_castor_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.023 -0.0220000000000001 -0.037"
+      rpy="0 0 0" />
+    <parent
+      link="FR_castor_link" />
+    <child
+      link="FR_castor_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="FL_castor_link">
+    <inertial>
+      <origin
+        xyz="-0.00552318684458558 -3.41351471283557E-07 -0.0106168689898222"
+        rpy="0 0 0" />
+      <mass
+        value="0.0112909660226999" />
+      <inertia
+        ixx="4.06107038233172E-06"
+        ixy="3.78111315001518E-11"
+        ixz="-8.6938243232044E-07"
+        iyy="3.83267906933975E-06"
+        iyz="-9.20044387381946E-11"
+        izz="4.46344046950868E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FL_castor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FL_castor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FL_castor_joint"
+    type="continuous">
+    <origin
+      xyz="0.295000000000001 0.174999999999999 -0.01065"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="FL_castor_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="FL_castor_wheel_link">
+    <inertial>
+      <origin
+        xyz="-5.55111512312578E-17 -0.022 -6.93889390390723E-18"
+        rpy="0 0 0" />
+      <mass
+        value="0.0472944068607781" />
+      <inertia
+        ixx="9.50735464480307E-06"
+        ixy="5.29258466993263E-21"
+        ixz="-2.29785715360018E-22"
+        iyy="1.4188378350207E-05"
+        iyz="2.17797369189345E-22"
+        izz="9.50735464480307E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FL_castor_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FL_castor_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FL_castor_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.023 0.022 -0.037"
+      rpy="0 0 0" />
+    <parent
+      link="FL_castor_link" />
+    <child
+      link="FL_castor_wheel_link" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <link
+    name="BR_castor_link">
+    <inertial>
+      <origin
+        xyz="-0.00552318684458564 -3.41351471006002E-07 -0.0106168689898225"
+        rpy="0 0 0" />
+      <mass
+        value="0.0112909660227001" />
+      <inertia
+        ixx="4.06107038233184E-06"
+        ixy="3.78111315490765E-11"
+        ixz="-8.69382432320444E-07"
+        iyy="3.83267906933988E-06"
+        iyz="-9.20044387105446E-11"
+        izz="4.46344046950877E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BR_castor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BR_castor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="BR_castor_joint"
+    type="continuous">
+    <origin
+      xyz="-0.295000000000001 -0.174999999999999 -0.01065"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="BR_castor_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="BR_castor_wheel_link">
+    <inertial>
+      <origin
+        xyz="5.55111512312578E-17 0.022 1.38777878078145E-17"
+        rpy="0 0 0" />
+      <mass
+        value="0.047294406860778" />
+      <inertia
+        ixx="9.50735464480304E-06"
+        ixy="1.06975192740486E-20"
+        ixz="-2.75426880959119E-22"
+        iyy="1.41883783502069E-05"
+        iyz="4.08870248884661E-21"
+        izz="9.50735464480305E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BR_castor_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BR_castor_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="BR_castor_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0229999999999996 -0.022 -0.037"
+      rpy="0 0 0" />
+    <parent
+      link="BR_castor_link" />
+    <child
+      link="BR_castor_wheel_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="BL_castor_link">
+    <inertial>
+      <origin
+        xyz="-0.00552318684458547 -3.41351471311313E-07 -0.0106168689898222"
+        rpy="0 0 0" />
+      <mass
+        value="0.0112909660226999" />
+      <inertia
+        ixx="4.06107038233173E-06"
+        ixy="3.7811131504205E-11"
+        ixz="-8.69382432320429E-07"
+        iyy="3.83267906933976E-06"
+        iyz="-9.20044387521413E-11"
+        izz="4.46344046950868E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BL_castor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BL_castor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="BL_castor_joint"
+    type="continuous">
+    <origin
+      xyz="-0.294999999999999 0.175000000000001 -0.01065"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="BL_castor_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="BL_castor_wheel_link">
+    <inertial>
+      <origin
+        xyz="-5.55111512312578E-17 -0.022 -2.08166817117217E-17"
+        rpy="0 0 0" />
+      <mass
+        value="0.0472944068607781" />
+      <inertia
+        ixx="9.50735464480302E-06"
+        ixy="1.32942165495834E-20"
+        ixz="-9.74396256963576E-22"
+        iyy="1.41883783502069E-05"
+        iyz="4.06368758005758E-21"
+        izz="9.50735464480302E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BL_castor_wheel_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.294117647058824 0.294117647058824 0.294117647058824 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BL_castor_wheel_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="BL_castor_wheel_joint"
+    type="continuous">
+    <origin
+      xyz="-0.0230000000000003 0.022 -0.0369999999999999"
+      rpy="0 0 0" />
+    <parent
+      link="BL_castor_link" />
+    <child
+      link="BL_castor_wheel_link" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <link
+    name="R_shock_chassis_link">
+    <inertial>
+      <origin
+        xyz="0.0374995951330482 -0.0171692937862426 -0.0157237850437157"
+        rpy="0 0 0" />
+      <mass
+        value="0.0332778868774546" />
+      <inertia
+        ixx="1.01863222101648E-05"
+        ixy="9.17180267518191E-11"
+        ixz="6.92244813160802E-12"
+        iyy="1.14484720551192E-05"
+        iyz="-4.05831638636783E-06"
+        izz="1.21620792644567E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_shock_chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_shock_chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_shock_chassis_joint"
+    type="revolute">
+    <origin
+      xyz="-0.037501 -0.045 0.154"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="R_shock_chassis_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="R_shock_carrier_link">
+    <inertial>
+      <origin
+        xyz="0.0376462414531823 0.0213815120399094 0.0195832632928059"
+        rpy="0 0 0" />
+      <mass
+        value="0.0377456281823158" />
+      <inertia
+        ixx="1.17109423228358E-05"
+        ixy="-4.47298367824333E-09"
+        ixz="-3.31071616754541E-09"
+        iyy="1.41964958155414E-05"
+        iyz="-2.46884046692435E-06"
+        izz="1.5480957642602E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_shock_carrier_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_shock_carrier_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_shock_carrier_joint"
+    type="prismatic">
+    <origin
+      xyz="0 -0.087396 -0.080034"
+      rpy="0 0 0" />
+    <parent
+      link="R_shock_chassis_link" />
+    <child
+      link="R_shock_carrier_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="L_shock_chassis_link">
+    <inertial>
+      <origin
+        xyz="0.037500404867675 0.017170919185547 -0.0157220100357101"
+        rpy="0 0 0" />
+      <mass
+        value="0.033277886880756" />
+      <inertia
+        ixx="1.01863222105699E-05"
+        ixy="9.17186934043343E-11"
+        ixz="-6.91276635130347E-12"
+        iyy="1.1447632983213E-05"
+        iyz="4.05824252835209E-06"
+        izz="1.21629183362532E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_shock_chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_shock_chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_shock_chassis_joint"
+    type="revolute">
+    <origin
+      xyz="-0.037501 0.045 0.154"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="L_shock_chassis_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="L_shock_carrier_link">
+    <inertial>
+      <origin
+        xyz="0.0373537585470988 -0.0213835364011724 0.0195810528124935"
+        rpy="0 0 0" />
+      <mass
+        value="0.0377456281822758" />
+      <inertia
+        ixx="1.17109423228973E-05"
+        ixy="-4.47332589372173E-09"
+        ixz="3.31025389571329E-09"
+        iyy="1.41959853822218E-05"
+        iyz="2.46870762916609E-06"
+        izz="1.54814680758111E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_shock_carrier_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_shock_carrier_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_shock_carrier_joint"
+    type="prismatic">
+    <origin
+      xyz="0 0.087395 -0.080016"
+      rpy="0 0 0" />
+    <parent
+      link="L_shock_chassis_link" />
+    <child
+      link="L_shock_carrier_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="R_UA_chassis_link">
+    <inertial>
+      <origin
+        xyz="0.0434999999999989 -0.0280297617588107 0.00208943323566058"
+        rpy="0 0 0" />
+      <mass
+        value="0.0223441481251663" />
+      <inertia
+        ixx="1.03214140892262E-05"
+        ixy="-7.49457827091092E-20"
+        ixz="4.75865981174377E-21"
+        iyy="9.49018407757764E-07"
+        iyz="6.81141065460731E-07"
+        izz="1.00357561004962E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_UA_chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_UA_chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_UA_chassis_joint"
+    type="revolute">
+    <origin
+      xyz="-0.043501 -0.043 0.055496"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="R_UA_chassis_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="R_UA_carrier_link">
+    <inertial>
+      <origin
+        xyz="0.0434999999999966 -0.0211020379199229 -0.0339864993209746"
+        rpy="0 0 0" />
+      <mass
+        value="0.0966411692099489" />
+      <inertia
+        ixx="0.000123720244084145"
+        ixy="1.170454975376E-19"
+        ixz="-1.04631825531208E-19"
+        iyy="0.000138461650732555"
+        iyz="-2.24943307477633E-06"
+        izz="2.7171142536533E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_UA_carrier_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_UA_carrier_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_UA_carrier_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.073396 0.0054712"
+      rpy="0 0 0" />
+    <parent
+      link="R_UA_chassis_link" />
+    <child
+      link="R_UA_carrier_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="RW_link">
+    <inertial>
+      <origin
+        xyz="2.40033347080792E-09 0.032997937429549 -1.10394793983309E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.632202769104555" />
+      <inertia
+        ixx="0.000733512798111312"
+        ixy="2.86698167500925E-11"
+        ixz="-1.42409023748503E-16"
+        iyy="0.00109652818103647"
+        iyz="-1.21548693375984E-09"
+        izz="0.000733512798115419" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/RW_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/RW_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="RW_joint"
+    type="continuous">
+    <origin
+      xyz="0.0435 -0.1135 -0.069"
+      rpy="0 0 0" />
+    <parent
+      link="R_UA_carrier_link" />
+    <child
+      link="RW_link" />
+    <axis
+      xyz="0 1 0" />
+  </joint>
+  <link
+    name="R_LA_chassis_link">
+    <inertial>
+      <origin
+        xyz="0.043499999999995 -0.028014386464758 0.0022783690233684"
+        rpy="0 0 0" />
+      <mass
+        value="0.0223441481251662" />
+      <inertia
+        ixx="1.03214140892262E-05"
+        ixy="4.97336230105242E-20"
+        ixz="-4.64610951092262E-21"
+        iyy="9.59037355184906E-07"
+        iyz="7.42291175434558E-07"
+        izz="1.00257371530691E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_LA_chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_LA_chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_LA_chassis_joint"
+    type="revolute">
+    <origin
+      xyz="-0.043501 -0.043 -0.026"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="R_LA_chassis_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="R_LA_carrier_link">
+    <inertial>
+      <origin
+        xyz="0.0434999999999922 4.05304477810869E-05 0.000498354575336531"
+        rpy="0 0 0" />
+      <mass
+        value="0.00527787565803085" />
+      <inertia
+        ixx="1.74546887833449E-07"
+        ixy="-2.48278681692915E-22"
+        ixz="-2.69565637405306E-23"
+        iyy="3.67754836029221E-07"
+        iyz="5.28948612926906E-24"
+        izz="3.67754836029221E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_LA_carrier_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/R_LA_carrier_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="R_LA_carrier_joint"
+    type="revolute">
+    <origin
+      xyz="0 -0.073397 0.0054676"
+      rpy="0 0 0" />
+    <parent
+      link="R_LA_chassis_link" />
+    <child
+      link="R_LA_carrier_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="L_UA_chassis_link">
+    <inertial>
+      <origin
+        xyz="0.0435000000000014 0.0280292533817348 0.00209624196200647"
+        rpy="0 0 0" />
+      <mass
+        value="0.0223441481251663" />
+      <inertia
+        ixx="1.03214140892262E-05"
+        ixy="-2.00292466977162E-20"
+        ixz="-4.02005290561146E-22"
+        iyy="9.49349859695586E-07"
+        iyz="-6.83348269927808E-07"
+        izz="1.00354246485584E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_UA_chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_UA_chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_UA_chassis_joint"
+    type="revolute">
+    <origin
+      xyz="-0.043501 0.043 0.055496"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="L_UA_chassis_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="L_UA_carrier_link">
+    <inertial>
+      <origin
+        xyz="0.0435000000000124 0.0211020382890165 -0.0339864990918244"
+        rpy="0 0 0" />
+      <mass
+        value="0.0966411692099489" />
+      <inertia
+        ixx="0.000123720244084145"
+        ixy="-3.591060114134E-20"
+        ixz="-1.49028510157556E-20"
+        iyy="0.0001384616506837"
+        iyz="2.24943428332812E-06"
+        izz="2.71711425853881E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_UA_carrier_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_UA_carrier_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_UA_carrier_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.073395 0.005489"
+      rpy="0 0 0" />
+    <parent
+      link="L_UA_chassis_link" />
+    <child
+      link="L_UA_carrier_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="LW_link">
+    <inertial>
+      <origin
+        xyz="-2.73585599780665E-12 -0.0329979374294953 -1.07047943651711E-07"
+        rpy="0 0 0" />
+      <mass
+        value="0.632202769104554" />
+      <inertia
+        ixx="0.000733512798111456"
+        ixy="3.28122548247408E-14"
+        ixz="1.36276107808658E-19"
+        iyy="0.00109652818103684"
+        iyz="1.17517358478553E-09"
+        izz="0.0007335127981152" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/LW_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/LW_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="LW_joint"
+    type="continuous">
+    <origin
+      xyz="0.0435 0.1135 -0.069"
+      rpy="0 0 0" />
+    <parent
+      link="L_UA_carrier_link" />
+    <child
+      link="LW_link" />
+    <axis
+      xyz="0 -1 0" />
+  </joint>
+  <link
+    name="L_LA_chassis_link">
+    <inertial>
+      <origin
+        xyz="0.0435003300858887 0.0280293568333224 0.00209485823247225"
+        rpy="0 0 0" />
+      <mass
+        value="0.0223441481251662" />
+      <inertia
+        ixx="1.03214140892262E-05"
+        ixy="6.88286692857595E-20"
+        ixz="4.96174907500639E-21"
+        iyy="9.49282411798924E-07"
+        iyz="-6.82899712132529E-07"
+        izz="1.00354920964551E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_LA_chassis_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_LA_chassis_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_LA_chassis_joint"
+    type="revolute">
+    <origin
+      xyz="-0.043501 0.043 -0.026"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="L_LA_chassis_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="L_LA_carrier_link">
+    <inertial>
+      <origin
+        xyz="0.0435003300858992 4.53109771925142E-14 -4.80657180723654E-14"
+        rpy="0 0 0" />
+      <mass
+        value="0.00527787565803085" />
+      <inertia
+        ixx="1.74546887833449E-07"
+        ixy="-4.62139138662558E-22"
+        ixz="5.84419116958661E-24"
+        iyy="3.67754836029221E-07"
+        iyz="1.53803895146579E-23"
+        izz="3.67754836029221E-07" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_LA_carrier_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/L_LA_carrier_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="L_LA_carrier_joint"
+    type="revolute">
+    <origin
+      xyz="0 0.073395 0.0054854"
+      rpy="0 0 0" />
+    <parent
+      link="L_LA_chassis_link" />
+    <child
+      link="L_LA_carrier_link" />
+    <axis
+      xyz="1 0 0" />
+    <limit
+      lower="0"
+      upper="0"
+      effort="0"
+      velocity="0" />
+  </joint>
+  <link
+    name="Lidar_link">
+    <inertial>
+      <origin
+        xyz="-0.000592754435552802 -0.000431856287073633 -0.00519297880304892"
+        rpy="0 0 0" />
+      <mass
+        value="0.00676525951443629" />
+      <inertia
+        ixx="3.01334604242937E-06"
+        ixy="-2.43938387801104E-08"
+        ixz="-2.10758442695519E-08"
+        iyy="3.11871544560101E-06"
+        iyz="-1.45232713248504E-08"
+        izz="5.59786072423301E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/Lidar_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.43921568627451 0.43921568627451 0.43921568627451 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/Lidar_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="Lidar_joint"
+    type="continuous">
+    <origin
+      xyz="0.0070989 4.9978E-05 0.2525"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="Lidar_link" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+  <link
+    name="FR_sensor_link">
+    <inertial>
+      <origin
+        xyz="-0.00558977696979235 7.82353265504909E-10 -0.000448078024258586"
+        rpy="0 0 0" />
+      <mass
+        value="0.0263483426037755" />
+      <inertia
+        ixx="1.01186264595288E-05"
+        ixy="8.05887508067862E-15"
+        ixz="-3.38027340971718E-08"
+        iyy="2.39319775498176E-06"
+        iyz="8.28741870824154E-13"
+        izz="8.69806112168645E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FR_sensor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FR_sensor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FR_sensor_joint"
+    type="fixed">
+    <origin
+      xyz="0.3685 -0.18 0.174"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="FR_sensor_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="FL_sensor_link">
+    <inertial>
+      <origin
+        xyz="-0.0055897769697924 7.82353237749334E-10 -0.000448078024258586"
+        rpy="0 0 0" />
+      <mass
+        value="0.0263483426037756" />
+      <inertia
+        ixx="1.01186264595288E-05"
+        ixy="8.05887515806099E-15"
+        ixz="-3.38027340971721E-08"
+        iyy="2.39319775498176E-06"
+        iyz="8.2874186224947E-13"
+        izz="8.69806112168649E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FL_sensor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/FL_sensor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="FL_sensor_joint"
+    type="fixed">
+    <origin
+      xyz="0.3685 0.18 0.174"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="FL_sensor_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="BR_sensor_link">
+    <inertial>
+      <origin
+        xyz="0.0055897769697924 -7.82353237749334E-10 -0.000448078024258614"
+        rpy="0 0 0" />
+      <mass
+        value="0.0263483426037757" />
+      <inertia
+        ixx="1.01186264595289E-05"
+        ixy="8.05878733957201E-15"
+        ixz="3.38027340971714E-08"
+        iyy="2.39319775498177E-06"
+        iyz="-8.28741875492446E-13"
+        izz="8.69806112168652E-06" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BR_sensor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.792156862745098 0.819607843137255 0.933333333333333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BR_sensor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="BR_sensor_joint"
+    type="fixed">
+    <origin
+      xyz="-0.3685 -0.18 0.174"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="BR_sensor_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+  <link
+    name="BL_sensor_link">
+    <inertial>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <mass
+        value="0" />
+      <inertia
+        ixx="0"
+        ixy="0"
+        ixz="0"
+        iyy="0"
+        iyz="0"
+        izz="0" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BL_sensor_link.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="1 1 1 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://agv_sim/meshes/BL_sensor_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint
+    name="BL_sensor_joint"
+    type="fixed">
+    <origin
+      xyz="-0.36849558441227 0.179995584412273 0.173998528137423"
+      rpy="0 0 0" />
+    <parent
+      link="Chassis_link" />
+    <child
+      link="BL_sensor_link" />
+    <axis
+      xyz="0 0 0" />
+  </joint>
+</robot>
