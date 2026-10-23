@@ -1,17 +1,22 @@
 # agv_sim
 
-A lightweight ROS 2 Jazzy simulation of a magnetic-tape-guided AGV (automated guided vehicle).
+Simulation of a magnetic-tape-guided AGV (automated guided vehicle) for ROS 2 Jazzy.
 
 The AGV leaves START, drives to one or more stations along magnetic tape, and chooses a branch at every fork and merge. It recognises each station by its Navicode marker, stops, waits, turns 180° on the spot, and finally returns to START.
 
-The simulated guide sensor imitates the **Naviq MTS160** and publishes `naviq_msgs`.
-Shared behaviour lives in the sibling `agv_control` package; this package contains
-only simulation code and assets. The shared follower still needs hardware
-compatibility and commissioning work; see `../agv_control/README.md`.
+The simulated guide sensor imitates the **Naviq MTS160** and publishes the same `naviq_msgs` messages as Naviq's real driver.
 
-The original simulation is kinematic and displayed in RViz. A separate Gazebo
-launch now supports physical manual driving and a virtual MTS160 over a straight
-tape strip; its station loop, lidar, and trolley docking are not connected yet.
+The steering, mission and obstacle logic lives in the sibling package `agv_control`, and the same nodes will run on the real robot. This package contains only simulation code and assets. The shared follower still needs hardware commissioning; see `../agv_control/README.md`.
+
+There are two simulations of the same track:
+
+| | RViz (kinematic) | Gazebo (physics) |
+|---|---|---|
+| Launch | `sim.launch.py` | `gazebo_loop.launch.py` |
+| Robot motion | ideal unicycle model in `sim_node` | Gazebo physics, `DiffDrive` plugin |
+| Robot model | none (TF axes only) | `models/agv_box.sdf`, or any SDF/URDF |
+| Ultrasonic obstacle stop | no | yes |
+| Status | complete | new; full missions still being verified |
 
 ```
  y (m)
@@ -27,134 +32,26 @@ tape strip; its station loop, lidar, and trolley docking are not connected yet.
      x: -3.3  -1     2.5   4    6      9
 ```
 
-## Quick start
+## Build
 
-### Gazebo: manual driving and magnetic-sensor readings
-
-```bash
-cd "/media/rishmika/Shared Data/Idea8/AGV/ros2_ws"
-source /opt/ros/jazzy/setup.bash
-colcon build --symlink-install --packages-up-to agv_sim
-source install/setup.bash
-ros2 launch agv_sim gazebo.launch.py
-```
-
-In a second terminal:
-
-```bash
-source /opt/ros/jazzy/setup.bash
-ros2 topic pub --rate 10 /cmd_vel_raw geometry_msgs/msg/Twist "{linear: {x: 0.15}, angular: {z: 0.0}}"
-```
-
-Press Ctrl+C to end the publisher, then explicitly stop the robot:
-
-```bash
-ros2 topic pub --once /cmd_vel_raw geometry_msgs/msg/Twist "{linear: {x: 0.0}, angular: {z: 0.0}}"
-```
-
-The shared obstacle-stop node is the sole `/cmd_vel` publisher. Send all manual
-or follower requests to `/cmd_vel_raw`; a stale request or sensor reading causes
-the gate to publish zero. To turn in place, request `linear.x: 0.0` and
-`angular.z: 0.4`. Gazebo's drive plugin itself retains its last command, so keep
-the gate running until the robot is stopped.
-
-This launch runs Gazebo, the ROS bridge, simulated MTS160 and ultrasonic nodes,
-and `agv_control/obstacle_stop`. Start the shared follower separately:
-
-```bash
-ros2 run agv_control line_follower --ros-args -p speed:=0.1 \
-  -p use_sim_time:=true -r cmd_vel:=/cmd_vel_raw
-```
-
-It does not start the kinematic `sim_node` or the real Naviq CAN driver.
-Close the lightweight simulation before using it to avoid competing `/cmd_vel`
-and `/tf` publishers.
-
-The initial model uses a 600 x 460 mm envelope, 131 mm drive wheels at the
-longitudinal centre, and four corner supports aligned with the drive-wheel
-centre lines. The 280 mm height is interpreted as floor-to-body-top, not body
-thickness or clearance. Provisional values are 20 kg body mass, 60 mm drive-wheel
-width, 400 mm wheel-centre spacing, 50 mm support diameter, and support centres
-at x = +/-250 mm. Supports are low-friction spheres approximating casters, with
-compliant vertical mounts: +/-5 mm travel, 2000 N/m stiffness, 20 N s/m damping,
-and 2 mm spring preload. These provisional simulation parameters keep the drive
-wheels loaded when a corner support crosses the raised tape. Rigid coplanar
-six-point supports caused the wheels to slip during turning. The model does not
-represent measured suspension, caster swivel, rolling resistance, or brackets.
-
-From the repository root, verify physical turning (requires Gazebo networking):
-
-```bash
-python3 scripts/check_gazebo_turn.py
-python3 scripts/check_gazebo_turn.py --angular-speed -0.4
-```
-
-The check starts its own isolated headless world and compares chassis world
-heading with wheel odometry; wheel odometry alone does not prove actual motion.
-
-The MTS160 is a box placeholder with its bottom face 28 mm above the floor and
-250 mm ahead of the axle. Its STEP mesh is not connected yet.
-Tape is a straight 4 m test strip, 25 mm wide and 1.3 mm thick, with collision
-geometry. Sensor clearance above its top is therefore 26.7 mm. Straight following
-works with the shared follower; the full station loop is not connected in Gazebo yet.
-
-Inspect the sensor in a third terminal:
-
-```bash
-cd "/media/rishmika/Shared Data/Idea8/AGV/ros2_ws"
-source /opt/ros/jazzy/setup.bash
-source install/setup.bash
-ros2 topic echo /mts160/track --once
-ros2 topic hz /mts160/track
-```
-
-At the initial pose, `tape_detected` and `single_track` should be true, both
-positions approximately 0 mm and both angles approximately 0 degrees. The topic
-publishes at 100 Hz of simulation time (wall-time rate depends on simulation
-speed). Stop `topic hz` with Ctrl+C. Rotate manually to move the sensor bar off
-the strip: it should eventually report `tape_detected: false`. No-tape position
-and angle values default to zero; always check `tape_detected` first.
-
-Gazebo publishes the model's true world pose at 100 Hz, bridged privately to
-`/gazebo/ground_truth` as `tf2_msgs/TFMessage`. The sensor selects the `agv` pose,
-reads tape/mount dimensions from the same SDF world file, and reuses `read_mts160`
-to publish `/mts160/track`. It does not use wheel `/odom` or integrate `/cmd_vel`.
-It publishes no-tape readings when ground truth is missing or older than 0.1 s
-of simulation time. A static `base_link -> mts160_link` transform identifies the
-bottom sensing-face centre (the Gazebo housing link origin is at its centre).
-
-This is a geometric model, not a magnetic-field simulation. It assumes a planar
-straight tape and uses a simple 10–50 mm clearance gate above the tape, rejecting
-body tilt above 15 degrees. It does not model field strength, edge effects,
-noise, or Navicode patterns; strength is strong whenever a track is detected.
-There are no station markers or `/mts160/navicode` output in this world yet.
-
-Run the geometry tests from the repository root:
-
-```bash
-PYTHONPATH=ros2_ws/src/agv_sim python3 -m unittest discover -s ros2_ws/src/agv_sim/test -p 'test_gazebo_sensor.py'
-```
-
-Run the isolated headless end-to-end sensor check from a sourced workspace:
-
-```bash
-python3 ../scripts/check_gazebo_sensor.py
-```
-
-### Lightweight kinematic simulation
+From the workspace root, never from inside `src`:
 
 ```bash
 cd "/media/rishmika/Shared Data/Idea8/AGV/ros2_ws"
 source /opt/ros/jazzy/setup.bash
 colcon build --symlink-install --packages-up-to agv_sim
 source install/setup.bash
+```
 
+This also builds `agv_control` and `naviq_msgs`, which comes from Naviq's repository cloned into `ros2_ws/src/naviq_mts160_ros2`. A change to `setup.py` needs a rebuild, even with `--symlink-install`.
+
+## RViz simulation
+
+```bash
 ros2 launch agv_sim sim.launch.py targets:="[S1,S3]"
 ```
 
-This starts the simulator, the follower and RViz with the saved configuration. In the example, the AGV visits S1, then S3, then returns to START. Ctrl+C stops everything.
-
-## How it works
+This starts `sim_node`, the follower and RViz. In this example, the AGV visits S1, then S3, then returns to START. Ctrl+C stops everything.
 
 ```
                  /cmd_vel
@@ -169,14 +66,78 @@ This starts the simulator, the follower and RViz with the saved configuration. I
   RViz
 ```
 
-### `sim_node`: the world and the sensor
+Every 10 ms, `sim_node`:
+- moves the robot according to `/cmd_vel`. If no command arrives for 0.5 s, the robot stops.
+- computes what an MTS160 would see. The sensor is a 160 mm bar, 0.25 m ahead of the axle. Each tape crossing gives a position (mm) and an angle (degrees). Up to two tracks are reported, `left` and `right`, and they are identical on a single tape.
+- publishes a station's code on `/mts160/navicode` when the sensor leaves that station's marker.
 
-Every 10 ms it:
-- moves the robot (unicycle model) according to `/cmd_vel`. If no command arrives for 0.5 s, the robot stops.
-- computes what an MTS160 would see. The sensor is modelled as a 160 mm bar, 0.25 m ahead of the axle. Every crossing of that bar with a tape gives a position in mm and an angle in degrees. Up to two tracks are reported, `left` and `right`, and they are identical on a single tape.
-- checks whether the sensor is over a station marker. When the sensor leaves a marker, it publishes that station's code on `/mts160/navicode`.
+## Gazebo simulation
 
-### `line_follower`: the brain
+Terminal 1 starts Gazebo with the station loop and the robot at START. It also starts the bridge, `ultrasonic_sim` and `obstacle_stop`:
+
+```bash
+ros2 launch agv_sim gazebo_loop.launch.py
+```
+
+Terminal 2 starts the virtual MTS160:
+
+```bash
+ros2 run agv_sim gazebo_mts160 --ros-args -p use_sim_time:=true
+```
+
+Terminal 3 runs the mission. The follower's output goes through the obstacle gate:
+
+```bash
+ros2 run agv_control line_follower --ros-args -p use_sim_time:=true \
+  -p targets:="[S1]" -r cmd_vel:=/cmd_vel_raw
+```
+
+```
+line_follower ─▶ /cmd_vel_raw ─▶ obstacle_stop ─▶ /cmd_vel ─▶ Gazebo DiffDrive
+                                      ▲
+     Gazebo scans ─▶ ultrasonic_sim ─▶ /ultrasonic/<corner>   (Range)
+
+Gazebo true pose ─▶ /gazebo/ground_truth ─▶ gazebo_mts160 ─▶ /mts160/track, /mts160/navicode
+```
+
+### How the pieces work
+
+- **World:** at every launch, `world_builder.py` writes `/tmp/agv_station_loop.sdf` from `tape_map.py`. The Gazebo track is therefore always identical to the RViz one. Tape (25 × 1.3 mm) and Navicode markers are visual only, so the wheels never bump over tape edges.
+- **Robot:** spawned at START with `ros_gz_sim create`. Choose a different model with `robot_file:=/path/to/model.sdf` (or `.urdf`). Add `headless:=true` to run without the Gazebo window.
+- **Virtual MTS160** (`gazebo_mts160`): uses the same `read_mts160` and marker maths as `sim_node`, but takes the pose from Gazebo's physics instead of integrating `/cmd_vel`. The mounting position is the `mts160_x` parameter (default 0.25 m ahead of the axle).
+- **Obstacle stop** (`agv_control/obstacle_stop`): the only `/cmd_vel` publisher.
+  - It holds the robot when any of the 4 sensors reads 0.40 m or less, or when sensor data is missing or older than 0.3 s.
+  - It resumes after all 4 sensors read at least 0.55 m for 0.5 s.
+  - All 4 sensors count, whatever the direction of travel.
+- To test the stop, drop a box in front of the robot with Gazebo's box tool. The `obstacle_stop` log shows `HOLD` and then `CLEAR`.
+
+Gazebo's `DiffDrive` keeps the last command it received. `obstacle_stop` sends zero when commands stop, so keep it running until the robot has stopped.
+
+### The box robot: `models/agv_box.sdf`
+
+Provisional values, from the planned dimensions:
+
+| Part | Value |
+|---|---|
+| Body | 600 × 460 mm, top 280 mm above the floor, 20 kg |
+| Drive wheels | 131 mm diameter, 60 mm wide, 0.4 m apart, at the longitudinal centre |
+| Casters | four 50 mm low-friction spheres at x = ±0.25 m, on sprung mounts (±5 mm) |
+| MTS160 | 160 mm box placeholder, 0.25 m ahead of the axle, bottom 28 mm above the floor |
+| Ultrasonic | 4 narrow `gpu_lidar` fans (±15°, 0.02–5 m, 10 Hz) at the body corners, 0.18 m up |
+| Drive limits | 0.5 m/s, 1 rad/s |
+
+### Using another robot model
+
+A model passed with `robot_file:=` must provide, for example through `<gazebo>` tags in a URDF:
+1. a `DiffDrive` plugin on `/cmd_vel`, with the real wheel radius and spacing;
+2. a `PosePublisher` plugin, used for `/gazebo/ground_truth`;
+3. four ultrasonic sensors on `/ultrasonic/<corner>/scan` (`front_left`, `front_right`, `rear_left`, `rear_right`).
+
+Then set `mts160_x` on `gazebo_mts160` to the sensor's real position.
+
+`ultrasonic_sim.py` still hard-codes the box robot's sensor positions for its TF frames.
+
+## The follower (`agv_control/line_follower`)
 
 It only sees what the real sensor would report. It is a state machine:
 
@@ -186,25 +147,10 @@ FOLLOW ──(Navicode = next stop)──▶ DWELL ──(3 s)──▶ SPIN ─
 ```
 
 - **Steering:** `w = kp·offset + ka·angle`, using the left or the right track as the route says.
-- **Junctions:** two tracks seen for 5 messages means a junction has started. One track for 20 messages means it is over, and the follower moves to the next route entry.
-- **Route planning** (`agv_control.mission_planner`): each leg between stations takes the shorter way round the configured loop.
-  - Counter-clockwise, the spurs are on the robot's right: entering or leaving a spur is `R,R`, and passing one is `L,L`.
+- **Junctions:** two tracks seen for 5 messages means a junction has started. One track for 20 messages means it is over.
+- **Route planning** (`agv_control.mission_planner`): each leg takes the shorter way round the loop.
+  - Counter-clockwise, entering or leaving a spur is `R,R` and passing one is `L,L`.
   - Clockwise, everything is mirrored.
-
-## Topics
-
-| Topic | Type | Publisher |
-|---|---|---|
-| `/cmd_vel` | `geometry_msgs/Twist` | `line_follower` (or teleop) |
-| `/mts160/track` | `naviq_msgs/TrackDetection` | `sim_node` |
-| `/mts160/navicode` | `naviq_msgs/Navicode` | `sim_node` |
-| `/tf` (`odom → base_link`) | `tf2_msgs/TFMessage` | `sim_node` |
-| `/tape_map` | `visualization_msgs/MarkerArray` (transient local) | `sim_node` |
-| `/sensor_markers` | `visualization_msgs/Marker` | `sim_node` |
-
-`/mts160/track` uses the sensor's own sign convention: **left is negative and right is positive**, in mm. ROS uses +left, so the follower flips the sign.
-
-## Parameters (`line_follower`)
 
 | Parameter | Default | Meaning |
 |---|---|---|
@@ -216,8 +162,22 @@ FOLLOW ──(Navicode = next stop)──▶ DWELL ──(3 s)──▶ SPIN ─
 | `ka` | `1.0` | Steering gain on the tape angle (rad/s per rad) |
 | `dwell` | `3.0` | Waiting time at a stop (s) |
 | `spin_speed` | `0.6` | Turning speed when turning around (rad/s) |
+| `use_sim_time` | `false` | Set `true` in Gazebo |
 
-Launch argument: `targets` (default `[S2]`).
+## Topics
+
+| Topic | Type | RViz publisher | Gazebo publisher |
+|---|---|---|---|
+| `/cmd_vel_raw` | `geometry_msgs/Twist` | – | `line_follower` (remapped) or teleop |
+| `/cmd_vel` | `geometry_msgs/Twist` | `line_follower` | `obstacle_stop` |
+| `/mts160/track` | `naviq_msgs/TrackDetection` | `sim_node` | `gazebo_mts160` |
+| `/mts160/navicode` | `naviq_msgs/Navicode` | `sim_node` | `gazebo_mts160` |
+| `/ultrasonic/<corner>` | `sensor_msgs/Range` | – | `ultrasonic_sim` |
+| `/gazebo/ground_truth` | `tf2_msgs/TFMessage` | – | Gazebo `PosePublisher` via the bridge |
+| `/odom`, `/tf` | `nav_msgs/Odometry`, `tf2_msgs/TFMessage` | `sim_node` (TF only) | Gazebo `DiffDrive` via the bridge |
+| `/tape_map`, `/sensor_markers` | `visualization_msgs` | `sim_node` | – |
+
+`/mts160/track` uses the sensor's own sign convention: **left is negative and right is positive**, in mm. ROS uses +left, so the follower flips the sign.
 
 ## Track and sensor constants (`tape_map.py`)
 
@@ -229,59 +189,60 @@ Launch argument: `targets` (default `[S2]`).
 | `SPURS` | START 4, S3 3, S2 2, S1 1 | Station names and Navicodes, in counter-clockwise order |
 | `START_POSE` | (−3.25, 2.5, 0) | Robot start on the START stem |
 
-`tape_map.py` contains simulated geometry only. The shared planner reads station
-configuration from `agv_control`; after building and sourcing the workspace:
+`tape_map.py` holds the simulated geometry only. The planner reads its station configuration from `agv_control/config/station_loop.json`:
 
 ```bash
 python3 -c "from agv_control.mission_planner import plan_mission; print(plan_mission(['S1','S3']))"
 ```
 
-## Running nodes by hand
-
-```bash
-ros2 run agv_sim sim_node
-ros2 run agv_control line_follower --ros-args -p targets:="[S2]"
-rviz2 -d src/agv_sim/rviz/agv_sim.rviz
-```
-
-To drive by hand instead of running the follower (do not run both, since both publish `/cmd_vel`):
-
-```bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
-```
-
-Useful checks:
+## Useful commands
 
 ```bash
 ros2 topic echo /mts160/track --once
 ros2 topic echo /mts160/navicode
 ros2 param get /line_follower route
+ros2 run teleop_twist_keyboard teleop_twist_keyboard                       # RViz sim
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r cmd_vel:=/cmd_vel_raw   # Gazebo
 ```
+
+Run only one `/cmd_vel` source at a time: either the follower or teleop.
+
+In Gazebo, `obstacle_stop` drops commands older than 0.3 s, so hold the teleop key down. A single key press only moves the robot briefly.
 
 ## Files
 
 ```
 agv_sim/
 ├── agv_sim/
-│   ├── sim_node.py        simulator: motion, TF, virtual MTS160, Navicode, RViz markers
-│   ├── gazebo_sensor.py   virtual MTS160 from physical Gazebo pose
-│   ├── gazebo_sensor_geometry.py  straight-strip sensor maths
-│   ├── ultrasonic_sim.py  scans to simulated ultrasonic Range readings
-│   └── tape_map.py        track geometry and virtual sensor maths (no ROS)
-├── launch/sim.launch.py   starts sim_node, agv_control follower and RViz
-├── launch/gazebo.launch.py  Gazebo, simulated sensors, agv_control obstacle stop
-├── worlds/               Gazebo worlds and robot/sensor visuals
-├── rviz/agv_sim.rviz      RViz configuration
-├── package.xml            depends on naviq_msgs, among others
-└── setup.py               simulation executables only
+│   ├── tape_map.py         track geometry, MTS160 and marker maths (no ROS)
+│   ├── sim_node.py         RViz simulator: motion, TF, virtual MTS160, Navicode, markers
+│   ├── world_builder.py    writes the Gazebo world from tape_map.py (no ROS)
+│   ├── gazebo_mts160.py    virtual MTS160 and Navicode from Gazebo's true pose
+│   └── ultrasonic_sim.py   Gazebo scans to ultrasonic Range readings
+├── launch/
+│   ├── sim.launch.py       RViz simulation
+│   └── gazebo_loop.launch.py   Gazebo station loop, robot spawn, sensors, obstacle stop
+├── models/agv_box.sdf      box robot for Gazebo
+├── urdf/, meshes/          CAD export (display only; not yet drivable in Gazebo)
+├── rviz/agv_sim.rviz       RViz configuration
+├── package.xml
+└── setup.py
 ```
 
-`naviq_msgs` comes from Naviq's repository, cloned into `ros2_ws/src/naviq_mts160_ros2`.
+### Obsolete, to be removed
+
+These belong to the first straight-strip Gazebo test. They stopped working when the robot moved from `worlds/agv_world.sdf` into `models/agv_box.sdf`:
+- `launch/gazebo.launch.py`
+- `agv_sim/gazebo_sensor.py`, `agv_sim/gazebo_sensor_geometry.py`
+- `worlds/agv_world.sdf`
+- `test/test_gazebo_sensor.py`
+- `scripts/check_gazebo_sensor.py`, `scripts/check_gazebo_turn.py` (in the repository root)
 
 ## Limits and next steps
 
-- The robot dimensions (sensor 0.25 m ahead of the axle) are placeholders until the imported CAD URDF is checked against the real chassis. The real wheels are 131 mm in diameter.
-- `urdf/AGV.urdf` and `meshes/` can be displayed separately; `gazebo.launch.py` still uses the simplified robot in `worlds/agv_world.sdf`. The URDF and meshes are not installed by `setup.py` yet.
+- Robot dimensions are placeholders until the new URDF is checked against the real chassis. The real wheels are 131 mm in diameter.
+- The current `urdf/AGV.urdf` can't drive in Gazebo yet. It has no Gazebo plugins, its suspension joints are free, its left wheel axis is mirrored, it has no MTS160, and its collision meshes are heavy.
 - A Navicode is modelled as one 50 mm square. The real sensor decodes a pattern of several markers.
-- The kinematic model has no slip, inertia or motor limits. Gazebo adds physics,
-  but real masses, caster behaviour, lidar, and docking still need work.
+- The virtual MTS160 is geometric. It doesn't model magnetic field strength, edge effects or noise.
+- The turn-around counts its angle from message timing, so an obstacle hold during a spin makes it think it has turned further than it did.
+- Full Gazebo missions, the lidar, and docking with the trolley still need work.
