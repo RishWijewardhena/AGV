@@ -14,7 +14,6 @@ setup(
         ('share/' + package_name, ['package.xml']),
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
-        (os.path.join('share', package_name, 'worlds'), glob('worlds/*.sdf')),
         (os.path.join('share', package_name, 'models'), glob('models/*sdf')),
 
     ],
@@ -32,7 +31,6 @@ setup(
     entry_points={
         'console_scripts': [
         'sim_node = agv_sim.sim_node:main',
-        'gazebo_sensor = agv_sim.gazebo_sensor:main',
         'ultrasonic_sim = agv_sim.ultrasonic_sim:main',
         'gazebo_mts160 = agv_sim.gazebo_mts160:main',
         ],
