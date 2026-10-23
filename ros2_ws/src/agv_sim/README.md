@@ -12,7 +12,7 @@ There are two simulations of the same track:
 
 | | RViz (kinematic) | Gazebo (physics) |
 |---|---|---|
-| Launch | `sim.launch.py` | `gazebo_loop.launch.py` |
+| Launch | `sim.launch.py` | `gazebo.launch.py` |
 | Robot motion | ideal unicycle model in `sim_node` | Gazebo physics, `DiffDrive` plugin |
 | Robot model | none (TF axes only) | `models/agv_box.sdf`, or any SDF/URDF |
 | Ultrasonic obstacle stop | no | yes |
@@ -73,24 +73,19 @@ Every 10 ms, `sim_node`:
 
 ## Gazebo simulation
 
-Terminal 1 starts Gazebo with the station loop and the robot at START. It also starts the bridge, `ultrasonic_sim` and `obstacle_stop`:
+One command starts Gazebo with the station loop and the robot at START, the bridge, the virtual MTS160, the ultrasonic sensors, the obstacle stop and the follower:
 
 ```bash
-ros2 launch agv_sim gazebo_loop.launch.py
+ros2 launch agv_sim gazebo.launch.py targets:="[S1,S3]"
 ```
 
-Terminal 2 starts the virtual MTS160:
+| Launch argument | Default | Meaning |
+|---|---|---|
+| `targets` | `[S2]` | Stations to visit in order |
+| `robot_file` | `models/agv_box.sdf` | Robot model to spawn (SDF or URDF) |
+| `headless` | `false` | `true` runs Gazebo without its window |
 
-```bash
-ros2 run agv_sim gazebo_mts160 --ros-args -p use_sim_time:=true
-```
-
-Terminal 3 runs the mission. The follower's output goes through the obstacle gate:
-
-```bash
-ros2 run agv_control line_follower --ros-args -p use_sim_time:=true \
-  -p targets:="[S1]" -r cmd_vel:=/cmd_vel_raw
-```
+The follower's output goes through the obstacle gate:
 
 ```
 line_follower ─▶ /cmd_vel_raw ─▶ obstacle_stop ─▶ /cmd_vel ─▶ Gazebo DiffDrive
@@ -221,22 +216,13 @@ agv_sim/
 │   └── ultrasonic_sim.py   Gazebo scans to ultrasonic Range readings
 ├── launch/
 │   ├── sim.launch.py       RViz simulation
-│   └── gazebo_loop.launch.py   Gazebo station loop, robot spawn, sensors, obstacle stop
+│   └── gazebo.launch.py   Gazebo station loop, robot spawn, sensors, obstacle stop
 ├── models/agv_box.sdf      box robot for Gazebo
 ├── urdf/, meshes/          CAD export (display only; not yet drivable in Gazebo)
 ├── rviz/agv_sim.rviz       RViz configuration
 ├── package.xml
 └── setup.py
 ```
-
-### Obsolete, to be removed
-
-These belong to the first straight-strip Gazebo test. They stopped working when the robot moved from `worlds/agv_world.sdf` into `models/agv_box.sdf`:
-- `launch/gazebo.launch.py`
-- `agv_sim/gazebo_sensor.py`, `agv_sim/gazebo_sensor_geometry.py`
-- `worlds/agv_world.sdf`
-- `test/test_gazebo_sensor.py`
-- `scripts/check_gazebo_sensor.py`, `scripts/check_gazebo_turn.py` (in the repository root)
 
 ## Limits and next steps
 
