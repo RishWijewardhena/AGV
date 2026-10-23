@@ -39,17 +39,7 @@
 
 The planned junction choices and station codes help one AGV follow the right
 route and avoid mistaking one station for another. Obstacle readings make it
-stop and wait rather than drive into a blockage. The current stop gate does
-not identify which direction an obstacle is in; any of the four sensors can
-hold motion.
+stop and wait rather than drive into a blockage. 
 
-Coordination between **multiple AGVs** is not implemented. If several robots
-will share the tape, they will need a separate system to reserve stations or
-track sections and prevent head-on or intersection conflicts.
 
-## Current state
 
-The RViz simulation demonstrates the station loop and station missions. Gazebo
-currently demonstrates a straight tape, virtual MTS160 and ultrasonic readings,
-and obstacle stopping. Real sensor commissioning, encoder odometry, trolley
-locking, and full station missions in Gazebo remain future work.
