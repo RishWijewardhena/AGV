@@ -136,7 +136,6 @@ def station_loop():
 	"""Counter-clockwise loop with START, S1, S2, S3 spurs.
 	Returns (lines, stations); stations[name] = {'tag': (x, y), 'code': n}."""
 	loop = loop_path()
-	loop.straight(8).arc(1, 90).straight(3).arc(1, 90).straight(8).arc(1, 90).straight(3).arc(1, 90)
 	lines = [loop.pts]
 	stations = {}
 
