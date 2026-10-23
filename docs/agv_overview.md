@@ -1,57 +1,55 @@
-# AGV project overview
+# AGV functions and station navigation
 
-## Purpose
+## What the AGV does
 
-This AGV is a magnetic-tape-guided trolley tug. It travels to a trolley,
-locks onto it, tows it to a requested station, releases it, and can return
-to START or continue to another task.
+- Follows magnetic tape to travel between stations.
+- Chooses the correct branch at each fork for the requested destination.
+- Recognizes a station from its coded magnetic marker and stops there.
+- Stops and waits if an obstacle blocks the path, then resumes when clear.
+- Is intended to lock onto a trolley, tow it, and release it at another station.
 
-## Intended task
+## Sensors used
 
-1. Follow floor tape and choose the correct branch for the requested station.
-2. Recognize stations using coded Navicode markers beside the tape.
-3. Stop and wait when an obstacle blocks the path; resume when it clears.
-4. Drive into a trolley and engage four solenoid locks.
-5. Tow the trolley to its destination, stop, and release the locks.
-6. Track travel using wheel encoders read from the motor driver.
+- **Naviq MTS160 magnetic sensor:** reports tape position and angle, detects
+  multiple tracks at a fork, and reads Navicode station markers. The line
+  follower uses these readings to steer and choose a branch.
+- **Four ultrasonic sensors:** measure distances at the front and rear corners.
+  They provide the readings used to stop and wait for obstacles.
+- **Wheel encoders in the motor system:** planned source of travel distance and
+  odometry for the real AGV.
+- **RPLidar A1M8:** planned for additional object detection. It is not the
+  source of the magnetic route map.
 
-## Main components
+## How it travels from station to station
 
-- **Chassis:** approximately 60 cm long, 46 cm wide, and 28 cm high, with
-  two drive wheels near the middle and four corner caster wheels.
-- **Drive:** two 131 mm ZLLG50ASM200 hub wheels and one ZLAC8015D V4 dual
-  motor driver. The driver connects to the Raspberry Pi through USB–RS485.
-- **Guide:** Naviq MTS160 magnetic sensor, intended to sit about 28 mm above
-  the floor. It reads tape position, branches, and Navicode markers. Its
-  planned Pi connection is CAN through a CANable adapter.
-- **Track:** Naviq magnetic tape, 25 mm or 50 mm wide, with opposite-polarity
-  markers. The current Gazebo test strip is 25 mm wide and 1.3 mm thick.
-- **Obstacle sensing:** four DFRobot I2C ultrasonic sensors at the front and
-  rear corners. An RPLidar A1M8 is planned for additional object detection.
-- **Trolley coupling:** four solenoid door locks controlled in two pairs by
-  a relay module.
-- **Control and power:** Raspberry Pi 4B running Ubuntu 24.04 and ROS 2 Jazzy;
-  24 V main supply with a 5 V converter for the Pi; emergency stop, buzzer,
-  NeoPixel status lights, and a local display.
+1. A mission lists the stations to visit, such as START → S1 → S3 → START.
+2. The route planner uses a station map to choose the shorter direction around
+   the loop and prepares a left/right choice for each junction.
+3. The MTS160 keeps the robot centred on the tape. At a fork, the follower uses
+   the planned left or right track and advances to the next junction choice
+   after the fork has passed.
+4. A Navicode marker confirms arrival at the expected station. The current
+   follower stops, waits, turns around, and continues toward the next target.
+5. The obstacle stop gate holds the drive command at zero if any distance
+   reading indicates a nearby obstacle or a sensor reading is unavailable. It
+   allows motion again only after all four readings show a clear path for a
+   short period.
 
-## Software and current progress
+## What “without conflicts” means today
 
-- `agv_control` contains shared route planning, tape following, and obstacle
-  stopping.
-- `agv_sim` contains an RViz simulation with station routes and a Gazebo
-  simulation with a straight tape, virtual MTS160, and four virtual distance
-  readings. Gazebo currently uses a simplified robot model.
-- `agv_bringup` contains a small motor-control wrapper and startup files.
-  Motor activation is disabled by default and has not been commissioned on
-  the real robot.
-- The SolidWorks URDF and STL meshes have been imported and displayed, but
-  they have not replaced the simplified robot in the Gazebo world.
+The planned junction choices and station codes help one AGV follow the right
+route and avoid mistaking one station for another. Obstacle readings make it
+stop and wait rather than drive into a blockage. The current stop gate does
+not identify which direction an obstacle is in; any of the four sensors can
+hold motion.
 
-## Remaining work
+Coordination between **multiple AGVs** is not implemented. If several robots
+will share the tape, they will need a separate system to reserve stations or
+track sections and prevent head-on or intersection conflicts.
 
-- Measure the drive-wheel spacing and validate the CAD model for Gazebo physics.
-- Add the full station route and trolley interaction to Gazebo.
-- Commission the real MTS160 and motor driver; derive odometry from wheel
-  encoders. The real route map must be measured rather than copied from the
-  RViz example.
-- Implement the real I2C ultrasonic node, trolley locks, and status devices.
+## Current state
+
+The RViz simulation demonstrates the station loop and station missions. Gazebo
+currently demonstrates a straight tape, virtual MTS160 and ultrasonic readings,
+and obstacle stopping. Real sensor commissioning, encoder odometry, trolley
+locking, and full station missions in Gazebo remain future work.
