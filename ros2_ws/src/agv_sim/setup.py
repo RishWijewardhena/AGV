@@ -34,6 +34,7 @@ setup(
         'sim_node = agv_sim.sim_node:main',
         'gazebo_sensor = agv_sim.gazebo_sensor:main',
         'ultrasonic_sim = agv_sim.ultrasonic_sim:main',
+        'gazebo_mts160 = agv_sim.gazebo_mts160:main',
         ],
     },
 )
