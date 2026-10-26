@@ -59,6 +59,12 @@ def generate_launch_description():
         
         Node(package='agv_sim',executable='gazebo_mts160', name='gazebo_mts160', output='screen',
              parameters=[{'use_sim_time': True}]),
+
+        Node(package='tf2_ros', executable='static_transform_publisher', name='lidar_tf',
+             arguments=['--x', '0.22', '--z', '0.3075',
+                        '--frame-id', 'base_link', '--child-frame-id', 'lidar_link'],
+             parameters=[{'use_sim_time': True}]),
+
                 
         Node(package='ros_gz_bridge', executable='parameter_bridge', name='gazebo_bridge',
              output='screen',
@@ -72,6 +78,7 @@ def generate_launch_description():
                  '/ultrasonic/front_right/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                  '/ultrasonic/rear_left/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                  '/ultrasonic/rear_right/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+                 '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
              ],
              remappings=[('/model/agv/pose', '/gazebo/ground_truth')],
              parameters=[{'use_sim_time': True}]),
