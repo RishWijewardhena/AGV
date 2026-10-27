@@ -90,7 +90,7 @@
           </material>
         </visual>
 
-      <!-- ultrasonic sensors front_left-->
+      <!-- ultrasonic sensors front_left-->z
       <sensor name="ultrasonic_front_left" type="gpu_lidar">
         <pose>0.31 0.20 0.18 0 0 0</pose>
 
@@ -104,10 +104,10 @@
         <lidar>
           <scan>
             <horizontal>
-              <samples>31</samples>
+              <samples>61</samples>
               <resolution>1</resolution>
-              <min_angle>-0.261799</min_angle>
-              <max_angle>0.261799</max_angle>
+              <min_angle>-0.523599</min_angle>
+              <max_angle>0.523599</max_angle>
             </horizontal>
 
             <vertical>
@@ -141,10 +141,10 @@
         <lidar>
           <scan>
             <horizontal>
-              <samples>31</samples>
+              <samples>61</samples>
               <resolution>1</resolution>
-              <min_angle>-0.261799</min_angle>
-              <max_angle>0.261799</max_angle>
+              <min_angle>-0.523599</min_angle>
+              <max_angle>0.523599</max_angle>
             </horizontal>
 
             <vertical>
@@ -177,10 +177,10 @@
         <lidar>
           <scan>
             <horizontal>
-              <samples>31</samples>
+              <samples>61</samples>
               <resolution>1</resolution>
-              <min_angle>-0.261799</min_angle>
-              <max_angle>0.261799</max_angle>
+              <min_angle>-0.523599</min_angle>
+              <max_angle>0.523599</max_angle>
             </horizontal>
 
             <vertical>
@@ -211,10 +211,10 @@
         <lidar>
           <scan>
             <horizontal>
-              <samples>31</samples>
+              <samples>61</samples>
               <resolution>1</resolution>
-              <min_angle>-0.261799</min_angle>
-              <max_angle>0.261799</max_angle>
+              <min_angle>-0.523599</min_angle>
+              <max_angle>0.523599</max_angle>
             </horizontal>
 
             <vertical>
