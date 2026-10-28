@@ -6,8 +6,38 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Range
+from sensor_msgs.msg import LaserScan
 
 NAMES =('front_left', 'front_right', 'rear_left', 'rear_right')
+SOURCES=NAMES+('lidar_front',)
+MAX_AGE={'lidar_front': 0.5}
+LIDAR_X=0.22 # lidar ahead of base_link
+BUMPER_X=0.30 #base link to front face
+HALF_WIDTH=0.28 # half the width of the robot
+
+def front_gap(ranges,angle_min,angle_increment,range_min,range_max):
+    """
+    Disatnce from the bumper to the closest scan point in the corridor
+    """
+
+    gap=math.inf
+
+    for i,r in enumerate(ranges):
+
+        #skip inf/NAN and out of range returns
+        if math.isinf(r) or math.isnan(r) or r<range_min or r>range_max:
+            continue
+
+        a=angle_min+i*angle_increment
+        #convert the(r,a) into base_link x
+        x=r*math.cos(a)+LIDAR_X
+        y=r*math.sin(a)
+
+        #keep the only points ahead of the bumper and inside |y| <=HALF_WIDTH
+        if x > BUMPER_X and abs(y) <= HALF_WIDTH:
+            gap = min(gap, x - BUMPER_X)
+
+    return gap
 
 class StopGate:
     """ decide whether the ultrasonic sensor permits the movements"""
@@ -30,19 +60,19 @@ class StopGate:
         healthy = all(
             name in self.readings
             and self.readings[name][0] is not None
-            and 0 <= now - self.readings[name][1] <= 0.30
-            for name in NAMES
+            and 0 <= now - self.readings[name][1] <= MAX_AGE.get(name, 0.30)
+            for name in SOURCES
         )
 
         if not healthy or any(
-            self.readings[name][0] <= 0.40 for name in NAMES
+            self.readings[name][0] <= 0.40 for name in SOURCES
         ):
             self.blocked = True
             self.clear_since = None
             return True
 
         if self.blocked:
-            if all(self.readings[name][0] >= 0.55 for name in NAMES):
+            if all(self.readings[name][0] >= 0.55 for name in SOURCES):
                 if self.clear_since is None or now < self.clear_since:
                     self.clear_since = now
 
@@ -67,14 +97,13 @@ class ObstacleStop(Node):
 
         self.publisher =self.create_publisher(Twist, 'cmd_vel', 10)
         self.create_subscription(Twist , '/cmd_vel_raw',self.on_command,10)
+        self.create_subscription(LaserScan, '/scan', self.on_scan, qos_profile_sensor_data)
 
         self.range_subscriptions =[]
 
         for name in NAMES:
             subscription = self.create_subscription(Range, f'/ultrasonic/{name}',lambda message, sensor=name: self.on_range(message ,sensor), qos_profile_sensor_data)
-
-            self.range_subscriptions.append(subscription)
-
+            
             self.range_subscriptions.append(subscription)
 
         self.create_timer(0.02,self.tick) # 50Hz
@@ -93,6 +122,12 @@ class ObstacleStop(Node):
         else:
             self.command = None
             self.command_time = None
+
+    def on_scan(self, message):
+        gap= front_gap(message.ranges,message.angle_min,message.angle_increment,message.range_min,message.range_max)
+        stamp = message.header.stamp.sec + message.header.stamp.nanosec * 1e-9
+        self.gate.update('lidar_front', gap, stamp)
+
 
     def on_range(self, message, name):
             distance = float(message.range)
