@@ -5,6 +5,8 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 from naviq_msgs.msg import TrackDetection, Navicode
 from agv_control.mission_planner import load_route_map, plan_mission
+from agv_control.junction import JunctionDetector
+
 
 
 class Follower(Node):
@@ -16,9 +18,7 @@ class Follower(Node):
         self.declare_parameter('kp', 8.0)        # rad/s per metre of tape offset
         self.declare_parameter('ka', 1.0)        # rad/s per radian of tape angle
         self.route_i = 0                         # which junction we are at
-        self.in_junction = False
-        self.wide = 0                            # consecutive messages with two tracks
-        self.narrow = 0                          # consecutive messages with one track
+        self.junctions =JunctionDetector()
         self.w = 0.0
         self.lost = 0
         self.create_subscription(TrackDetection, 'mts160/track', self.on_track, 10)
@@ -89,11 +89,8 @@ class Follower(Node):
         self.pub.publish(cmd)
 
     def reset_junctions(self):
-        self.in_junction = False
-        self.wide = 0
-        self.narrow = 0
+        self.junctions.reset()
         self.w = 0.0
-                    # DONE also lands here: zero speed
 
 
     def side(self):
@@ -101,18 +98,15 @@ class Follower(Node):
         return route[min(self.route_i, len(route) - 1)]   # past the end: keep the last choice
 
     def count_junctions(self, msg):
-        if msg.single_track:
-            self.narrow += 1
-            self.wide = 0
-        else:
-            self.wide += 1
-            self.narrow = 0
-        if not self.in_junction and self.wide >= 5:
-            self.in_junction = True
-            self.get_logger().info(f'junction {self.route_i + 1}: taking {self.side()}')
-        if self.in_junction and self.narrow >= 20:
-            self.in_junction = False
+        event =self.junctions.update(msg.single_track, msg.left.position_mm, msg.left.angle_deg, msg.right.position_mm, msg.right.angle_deg)
+
+        if event == 'start':
+            self.get_logger().info(f'junction {self.route_i + 1}: taking {self.side()} side')
+
+        elif event is not None:
+            self.get_logger().info(f'junction {self.route_i + 1}: {event[1]}, took {self.side()}')
             self.route_i += 1
+            
 
     def follow(self, msg):
         cmd = Twist()
