@@ -56,7 +56,10 @@ def generate_launch_description():
              parameters=[{'use_sim_time': True}],
              ros_arguments=['-p', ['targets:=', targets]],
              remappings=[('cmd_vel','/cmd_vel_raw')]),
-        
+
+        Node (package='agv_control', executable='wheel_odometry',name='wheel_odometry', output='screen',
+              parameters=[{'use_sim_time': True}]),
+              
         Node(package='agv_sim',executable='gazebo_mts160', name='gazebo_mts160', output='screen',
              parameters=[{'use_sim_time': True}]),
 
@@ -79,6 +82,8 @@ def generate_launch_description():
                  '/ultrasonic/rear_left/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                  '/ultrasonic/rear_right/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                  '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+                 '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
+
              ],
              remappings=[('/model/agv/pose', '/gazebo/ground_truth')],
              parameters=[{'use_sim_time': True}]),

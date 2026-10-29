@@ -23,5 +23,6 @@ setup(
     entry_points={'console_scripts': [
         'line_follower = agv_control.line_follower:main',
         'obstacle_stop = agv_control.obstacle_stop:main',
+        'wheel_odometry =agv_control.wheel_odometry:main',
     ]},
 )
