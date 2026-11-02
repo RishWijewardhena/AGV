@@ -117,8 +117,6 @@ class Follower(Node):
             self.route_i += 1
 
 
-
-
     def follow(self, msg):
         cmd = Twist()
         speed = self.get_parameter('speed').value

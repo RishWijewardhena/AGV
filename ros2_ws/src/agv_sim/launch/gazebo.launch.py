@@ -40,7 +40,13 @@ def generate_launch_description():
         DeclareLaunchArgument('targets', default_value='[S2]',
                               description='stations to visit in order, e.g. [S1,S3]'),
 
+        DeclareLaunchArgument('trip_file', default_value='maps/trips/trip.json',
+                              description='Where tape_recorder saves the trip (relative to the launch folder)'),
+
+
         OpaqueFunction(function=start_gazebo),
+
+
 
         Node(package='ros_gz_sim', executable='create', output='screen',
              arguments=['-world', 'agv_world', '-file', robot_file, '-name', 'agv',
@@ -57,7 +63,7 @@ def generate_launch_description():
              ros_arguments=['-p', ['targets:=', targets]],
              remappings=[('cmd_vel','/cmd_vel_raw')]),
         Node(package='agv_control',executable='tape_recorder', name='tape_recorder', output='screen',
-             parameters=[{'use_sim_time': True}]),
+             parameters=[{'use_sim_time': True, 'output': LaunchConfiguration('trip_file')}]),
 
         Node (package='agv_control', executable='wheel_odometry',name='wheel_odometry', output='screen',
               parameters=[{'use_sim_time': True}]),

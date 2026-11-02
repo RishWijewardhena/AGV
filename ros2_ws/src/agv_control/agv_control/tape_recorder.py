@@ -10,6 +10,7 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from std_msgs.msg import String
 from naviq_msgs.msg import Navicode
+from std_srvs.srv import Trigger
 
 
 def yaw(q):
@@ -24,10 +25,11 @@ class TapeRecorder(Node):
         self.pose = None             # latest (x, y, th) from wheel odometry
         self.distance = 0.0          # path length driven (m)
         self.log = []                # recorded events, in order
-        self.saved = False
+        self.saved = 0
         self.create_subscription(Odometry, 'wheel/odom', self.on_odom, 10)
         self.create_subscription(String, 'junction_events', self.on_event, 10)
         self.create_subscription(Navicode, 'mts160/navicode', self.on_navicode, 10)
+        self.create_service(Trigger, '~/save_trip', self.on_save)
 
     def on_odom(self, msg):
         p = msg.pose.pose
@@ -61,15 +63,23 @@ class TapeRecorder(Node):
             self.record({'event': 'station', 'code': msg.code})
 
     def save(self):
-        if self.saved:
-            return
-        path = os.path.expanduser(self.get_parameter('output').value)
+        path = os.path.abspath(os.path.expanduser(self.get_parameter('output').value))
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with open(path, 'w', encoding='utf-8') as out:
             json.dump(self.log, out, indent=1)
-        self.saved = True
-        self.get_logger().info(f'saved {len(self.log)} events to {path}')
+        self.saved = len(self.log)
+        message = f'saved {len(self.log)} events to {path}'
+        self.get_logger().info(message)
+        return message
 
+    def on_save(self, request, response):
+        try:
+            response.message = self.save()
+            response.success = True
+        except OSError as error:            # bad path, no permission, disk full
+            response.success = False
+            response.message = str(error)
+        return response
 
 def main():
     rclpy.init()
@@ -79,7 +89,9 @@ def main():
     except (KeyboardInterrupt, ExternalShutdownException):
         pass
     finally:
-        node.save()                                 # Ctrl+C still keeps the trip
+        if node.saved != len(node.log):                                 # Ctrl+C still keeps the trip
+            node.save()
+
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
