@@ -6,7 +6,7 @@ from geometry_msgs.msg import Twist
 from naviq_msgs.msg import TrackDetection, Navicode
 from agv_control.mission_planner import load_route_map, plan_mission
 from agv_control.junction import JunctionDetector
-
+from std_msgs.msg import String
 
 
 class Follower(Node):
@@ -23,6 +23,7 @@ class Follower(Node):
         self.lost = 0
         self.create_subscription(TrackDetection, 'mts160/track', self.on_track, 10)
         self.pub = self.create_publisher(Twist, 'cmd_vel', 10)
+        self.events= self.create_publisher(String, 'junction_events', 10)  # for debugging
 
         # naviq_msgs/Navicode publishing
         self.declare_parameter('stops', [2, 4])   # Navicode values to stop at, in order
@@ -46,7 +47,11 @@ class Follower(Node):
         self.create_subscription(Navicode, 'mts160/navicode', self.on_navicode, 10)
 
 
-
+    def announce(self, text):
+        """Tell the recorder to what has happned, e.g. fork,R or turn,R"""
+        msg = String()
+        msg.data = text
+        self.events.publish(msg)
 
     def on_navicode(self, msg):
         stops = self.get_parameter('stops').value
@@ -69,6 +74,7 @@ class Follower(Node):
                 self.state = 'SPIN'
                 self.turned = 0.0
                 self.get_logger().info('turning around')
+                self.announce('turn')
 
         elif self.state == 'SPIN':
             spin = self.get_parameter('spin_speed').value
@@ -82,6 +88,7 @@ class Follower(Node):
                 if self.stop_i >= len(self.get_parameter('stops').value):
                     self.state = 'DONE'
                     self.get_logger().info('mission complete')
+                    self.announce('done')
                 else:
                     self.state = 'FOLLOW'
                     self.get_logger().info('back on the tape')
@@ -102,11 +109,15 @@ class Follower(Node):
 
         if event == 'start':
             self.get_logger().info(f'junction {self.route_i + 1}: taking {self.side()} side')
+            self.announce(f'start, {self.side()}')
 
         elif event is not None:
             self.get_logger().info(f'junction {self.route_i + 1}: {event[1]}, took {self.side()}')
+            self.announce(f'{event[1]}, {self.side()}')
             self.route_i += 1
-            
+
+
+
 
     def follow(self, msg):
         cmd = Twist()

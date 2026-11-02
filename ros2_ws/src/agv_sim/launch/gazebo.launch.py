@@ -56,10 +56,12 @@ def generate_launch_description():
              parameters=[{'use_sim_time': True}],
              ros_arguments=['-p', ['targets:=', targets]],
              remappings=[('cmd_vel','/cmd_vel_raw')]),
+        Node(package='agv_control',executable='tape_recorder', name='tape_recorder', output='screen',
+             parameters=[{'use_sim_time': True}]),
 
         Node (package='agv_control', executable='wheel_odometry',name='wheel_odometry', output='screen',
               parameters=[{'use_sim_time': True}]),
-              
+
         Node(package='agv_sim',executable='gazebo_mts160', name='gazebo_mts160', output='screen',
              parameters=[{'use_sim_time': True}]),
 

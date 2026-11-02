@@ -24,5 +24,6 @@ setup(
         'line_follower = agv_control.line_follower:main',
         'obstacle_stop = agv_control.obstacle_stop:main',
         'wheel_odometry =agv_control.wheel_odometry:main',
+        'tape_recorder = agv_control.tape_recorder:main',
     ]},
 )
