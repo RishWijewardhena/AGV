@@ -25,5 +25,7 @@ setup(
         'obstacle_stop = agv_control.obstacle_stop:main',
         'wheel_odometry =agv_control.wheel_odometry:main',
         'tape_recorder = agv_control.tape_recorder:main',
+        'build_map = agv_control.map_builder:main',
+
     ]},
 )
