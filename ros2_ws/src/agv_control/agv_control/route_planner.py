@@ -35,34 +35,48 @@ def side_at(came_in, leaves):
     return leaves if came_in == 'T' else FLIP[came_in]
 
 
-def leg(site_map, start_code, goal_code):
-    """Shortest drive between two stations, leaving the start along its stem.
+def leaves(node, came_in, turn_at_stations=False):
+    """List the ports to drive out of after entering `node` through `came_in` (None: starts there)."""
+    if node['kind'] == 'station':
+        return ['T'] if came_in is None or turn_at_stations else []
+    return ['L', 'R'] if came_in == 'T' else ['T']    # never branch to branch
 
-    Returns (sides, metres): one 'L' or 'R' per junction passed.
+
+def search(site_map, start, came_in, is_goal, turn_at_stations=False):
+    """Shortest drive from `start` to the first (node, port it came in through) where is_goal holds.
+
+    Returns (sides, metres) with one 'L' or 'R' per junction passed, or None if there is no route.
     """
     nodes = site_map['nodes']
-    start = station_node(site_map, start_code)
-    goal = station_node(site_map, goal_code)
     graph = links(site_map)
-    queue = [(0.0, start, None, [])]      # (metres, node, port it came in through, sides)
+    queue = [(0.0, start, came_in, [])]      # (metres, node, port it came in through, sides)
     done = set()
     while queue:
         metres, node, came_in, sides = heapq.heappop(queue)
         if (node, came_in) in done:
             continue
         done.add((node, came_in))
-        if node == goal and came_in is not None:
+        if is_goal(node, came_in):
             return sides, metres
-        if nodes[node]['kind'] == 'station':
-            leave = ['T'] if came_in is None else []    # only the start station is left again
-        else:
-            leave = ['L', 'R'] if came_in == 'T' else ['T']   # never branch to branch
-        for port in leave:
+        for port in leaves(nodes[node], came_in, turn_at_stations):
             side = [side_at(came_in, port)] if nodes[node]['kind'] == 'junction' else []
             for other, other_port, length in graph.get((node, port), []):
                 if length is not None:
                     heapq.heappush(queue, (metres + length, other, other_port, sides + side))
-    raise ValueError(f'no route from station {start_code} to station {goal_code}')
+    return None
+
+
+def leg(site_map, start_code, goal_code):
+    """Shortest drive between two stations, leaving the start along its stem.
+
+    Returns (sides, metres): one 'L' or 'R' per junction passed.
+    """
+    goal = station_node(site_map, goal_code)
+    route = search(site_map, station_node(site_map, start_code), None,
+                   lambda node, came_in: node == goal and came_in is not None)
+    if route is None:
+        raise ValueError(f'no route from station {start_code} to station {goal_code}')
+    return route
 
 
 def plan_mission(site_map, targets, home):

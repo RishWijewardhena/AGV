@@ -1,6 +1,8 @@
 """Build a tape map (junctions, stations, edges) from a recorded trip (no ROS)."""
 
+import json
 import math
+import os
 
 SENSOR_X = 0.25      # m from the drive axle to the MTS160
 FLIP = {'L': 'R', 'R': 'L'}
@@ -126,9 +128,25 @@ def open_ports(nodes, edges):
             for port in ('T', 'L', 'R') if (i, port) not in used]
 
 
+def to_site_map(passage_list, anchor_code, tolerance=0.3):
+    """Return the map JSON shared by build_map and the explorer, with points rounded to mm."""
+    nodes, edges = build(passage_list, tolerance)
+    return {'anchor': anchor_code,
+            'nodes': [dict(node, point=[round(v, 3) for v in node['point']]) for node in nodes],
+            'edges': edges}
+
+
+def write_map(path, site_map):
+    """Save a map JSON, creating its folder; returns the absolute path."""
+    path = os.path.abspath(os.path.expanduser(path))
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w', encoding='utf-8') as f:
+        json.dump(site_map, f, indent=1)
+    return path
+
+
 def main(argv=None):
     import argparse
-    import json
     parser = argparse.ArgumentParser(description='Build a tape map from a recorded trip.')
     parser.add_argument('trips', nargs='+', help='trip JSON files written by tape_recorder')
     parser.add_argument('-o', '--output', help='map JSON to write (default: only print)')
@@ -145,7 +163,8 @@ def main(argv=None):
         except StopIteration:
             parser.exit(1, f'{name} never passed station {args.anchor}\n')
         passage_list += [{'kind': 'gap'}] + passages(trip)
-    nodes, edges = build(passage_list, args.tolerance)
+    site_map = to_site_map(passage_list, args.anchor, args.tolerance)
+    nodes, edges = site_map['nodes'], site_map['edges']
 
     for i, node in enumerate(nodes):
         name = f"station {node['code']}" if node['kind'] == 'station' else 'junction'
@@ -157,9 +176,4 @@ def main(argv=None):
     print('open ports (not taught yet):', ', '.join(f'{i}{p}' for i, p in missing) or 'none')
 
     if args.output:
-        result = {'anchor': args.anchor,
-                  'nodes': [dict(node, point=[round(v, 3) for v in node['point']]) for node in nodes],
-                  'edges': edges}
-        with open(args.output, 'w', encoding='utf-8') as f:
-            json.dump(result, f, indent=1)
-        print('saved', args.output)
+        print('saved', write_map(args.output, site_map))
