@@ -1,0 +1,10 @@
+# Drive every piece of tape from the START station and save the map it finds.
+string map_file          # where to write the map JSON (relative to the follower's working folder)
+---
+bool success
+string message
+int32 nodes
+int32 edges
+---
+int32 nodes              # stations and junctions found so far
+int32 open_ports         # junction ends not driven yet
