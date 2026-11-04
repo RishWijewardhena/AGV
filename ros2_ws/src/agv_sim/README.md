@@ -16,7 +16,8 @@ There are two simulations of the same track:
 | Robot motion | ideal unicycle model in `sim_node` | Gazebo physics, `DiffDrive` plugin |
 | Robot model | none (TF axes only) | `models/agv_box.sdf`, or any SDF/URDF |
 | Ultrasonic obstacle stop | no | yes |
-| Status | complete | new; full missions still being verified |
+| Mapping (recorder, exploration) | no | yes |
+| Status | complete | missions and exploration verified headless |
 
 ```
  y (m)
@@ -24,12 +25,12 @@ There are two simulations of the same track:
              │                │
  5.0    ╭────Y────────────────Y────╮      loop 10 m × 5 m, 1 m corners
         │                          │      spurs: 0.8 m arcs and a 1.5 m stem
- 2.5 START■──Y                     │      Navicode marker 1.0 m up each stem
+ 2.5 START■──Y                     Y──■S4  Navicode marker 1.0 m up each stem
         │                          │
  0.0    ╰────────────Y─────────────╯
                      │
 -2.3                 ■S3
-     x: -3.3  -1     2.5   4    6      9
+     x: -3.3  -1     2.5   4    6      9    11.3
 ```
 
 ## Build
@@ -82,6 +83,10 @@ ros2 launch agv_sim gazebo.launch.py targets:="[S1,S3]"
 | Launch argument | Default | Meaning |
 |---|---|---|
 | `targets` | `[S2]` | Stations to visit in order |
+| `site_map` | `''` | Taught map to plan `targets` on; empty uses the loop planner |
+| `route`, `stops` | `[R]`, `[2, 4]` | Explicit junction sides and stop codes, used with `targets:="['']"` |
+| `explore` | `false` | `true`: the follower waits for an `Explore` action goal instead of a mission |
+| `trip_file` | `maps/trips/trip.json` | Where `tape_recorder` saves the trip (relative to the launch folder) |
 | `robot_file` | `models/agv_box.sdf` | Robot model to spawn (SDF or URDF) |
 | `headless` | `false` | `true` runs Gazebo without its window |
 
@@ -93,7 +98,46 @@ line_follower ─▶ /cmd_vel_raw ─▶ obstacle_stop ─▶ /cmd_vel ─▶ Ga
      Gazebo scans ─▶ ultrasonic_sim ─▶ /ultrasonic/<corner>   (Range)
 
 Gazebo true pose ─▶ /gazebo/ground_truth ─▶ gazebo_mts160 ─▶ /mts160/track, /mts160/navicode
+
+/joint_states ─▶ wheel_odometry ─▶ /wheel/odom ─▶ tape_recorder ◀─ /junction_events (follower)
 ```
+
+### Mapping the layout
+
+The robot can learn the tape graph instead of being told it:
+
+```bash
+ros2 launch agv_sim gazebo.launch.py explore:=true
+ros2 action send_goal --feedback /line_follower/explore agv_interfaces/action/Explore \
+  "{map_file: maps/site_map.json}"
+ros2 launch agv_sim gazebo.launch.py targets:="[S4]" site_map:=maps/site_map.json
+```
+
+Exploration of the current layout takes about 6 minutes (≈ 87 m of tape and one turn at every
+station). `ros2 param set /line_follower dwell 0.0` before sending the goal removes the
+3 s waits. Details are in `../agv_control/README.md`.
+
+### Changing the tape layout
+
+Each `SPURS` entry in `tape_map.py` is `(name, Navicode, x, y, direction)`. `spur()` only draws
+the Y and stem, so `(x, y)` must lie **on** a straight part of the loop and `direction` is the
+loop's direction of travel there:
+
+| Loop side | Tape | Direction |
+|---|---|---|
+| bottom | y = 0, x 0 → 8 | `0` |
+| right | x = 9, y 1 → 4 | `90` |
+| top | y = 5, x 8 → 0 | `180` |
+| left | x = −1, y 4 → 1 | `-90` |
+
+A spur uses 0.8 m of loop either side of its point, so keep that clear of corners and other
+spurs. Keep `SPURS` in counter-clockwise order. When adding a station, also:
+
+1. add it to `agv_control/config/stations.json` (name → Navicode) for `targets`;
+2. add it at the same position in `agv_control/config/station_loop.json`, with its
+   `loop_position_m` from `loop_positions()`, so the loop planner and `test_route_geometry`
+   stay correct, and update the leg table in `agv_control/test/test_mission_planner.py`;
+3. explore again and replace `agv_control/config/site_map.json` with the result.
 
 ### How the pieces work
 
@@ -141,15 +185,21 @@ FOLLOW ──(Navicode = next stop)──▶ DWELL ──(3 s)──▶ SPIN ─
                                                       └──(last stop)──▶ DONE
 ```
 
+With `explore:=true` it starts in `IDLE`, every station tag after the first counts as a stop,
+and it returns to `IDLE` when the `Explore` goal ends.
+
 - **Steering:** `w = kp·offset + ka·angle`, using the left or the right track as the route says.
 - **Junctions:** two tracks seen for 5 messages means a junction has started. One track for 20 messages means it is over.
-- **Route planning** (`agv_control.mission_planner`): each leg takes the shorter way round the loop.
+- **Route planning** without `site_map` (`agv_control.mission_planner`): each leg takes the shorter way round the loop.
   - Counter-clockwise, entering or leaving a spur is `R,R` and passing one is `L,L`.
   - Clockwise, everything is mirrored.
+- **Route planning** with `site_map` (`agv_control.route_planner`): shortest path on the taught junction graph.
 
 | Parameter | Default | Meaning |
 |---|---|---|
 | `targets` | `['']` | Stations to visit in order, for example `[S1,S3]`. When set, it generates `route` and `stops`. |
+| `site_map_file` | `''` | Taught map for `targets`; empty uses `station_loop.json` |
+| `explore` | `false` | Serve the `~/explore` action instead of driving a mission |
 | `route` | `['R']` | `L` or `R` for each junction, used when `targets` is empty |
 | `stops` | `[2, 4]` | Navicode values to stop at, in order |
 | `speed` | `0.3` | Forward speed (m/s) |
@@ -181,7 +231,7 @@ FOLLOW ──(Navicode = next stop)──▶ DWELL ──(3 s)──▶ SPIN ─
 | `TAPE_WIDTH` | 0.025 m | Naviq MTRK25 tape (0.05 for MTRK50) |
 | `MARKER_SIZE`, `MARKER_GAP` | 0.05 m, 0.025 m | Marker size, and gap from the tape edge |
 | `R_SPUR`, `STEM`, `TAG_AT` | 0.8, 1.5, 1.0 m | Junction arc radius, stem length, marker position on the stem |
-| `SPURS` | START 4, S3 3, S2 2, S1 1 | Station names and Navicodes, in counter-clockwise order |
+| `SPURS` | START 4, S3 3, S4 5, S2 2, S1 1 | Station names and Navicodes, in counter-clockwise order |
 | `START_POSE` | (−3.25, 2.5, 0) | Robot start on the START stem |
 
 `tape_map.py` holds the simulated geometry only. The planner reads its station configuration from `agv_control/config/station_loop.json`:
@@ -231,4 +281,5 @@ agv_sim/
 - A Navicode is modelled as one 50 mm square. The real sensor decodes a pattern of several markers.
 - The virtual MTS160 is geometric. It doesn't model magnetic field strength, edge effects or noise.
 - The turn-around counts its angle from message timing, so an obstacle hold during a spin makes it think it has turned further than it did.
-- Full Gazebo missions, the lidar, and docking with the trolley still need work.
+- Exploration does not finish if a junction is classified `unknown` or odometry drift splits one junction into two (> 0.3 m apart); neither happens in Gazebo.
+- The lidar and docking with the trolley still need work.
