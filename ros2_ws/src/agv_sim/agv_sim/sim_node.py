@@ -6,7 +6,6 @@ from tf2_ros import TransformBroadcaster
 from visualization_msgs.msg import Marker,MarkerArray
 from geometry_msgs.msg import Point
 from rclpy.qos import QoSProfile,DurabilityPolicy
-import numpy as np
 from std_msgs.msg import ColorRGBA
 from agv_sim.tape_map import TAPE_WIDTH, MARKER_SIZE, START_POSE, station_loop, to_segments,read_mts160 ,marker_under_sensor
 from naviq_msgs.msg import TrackDetection , Navicode
