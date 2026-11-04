@@ -109,11 +109,11 @@ class Follower(Node):
 
         if event == 'start':
             self.get_logger().info(f'junction {self.route_i + 1}: taking {self.side()} side')
-            self.announce(f'start, {self.side()}')
+            self.announce(f'start,{self.side()}')
 
         elif event is not None:
             self.get_logger().info(f'junction {self.route_i + 1}: {event[1]}, took {self.side()}')
-            self.announce(f'{event[1]}, {self.side()}')
+            self.announce(f'{event[1]},{self.side()}')
             self.route_i += 1
 
 
