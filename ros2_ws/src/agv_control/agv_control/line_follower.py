@@ -7,6 +7,7 @@ from naviq_msgs.msg import TrackDetection, Navicode
 from agv_control.mission_planner import load_route_map, plan_mission
 from agv_control.junction import JunctionDetector
 from std_msgs.msg import String
+from agv_control import route_planner
 
 
 class Follower(Node):
@@ -33,11 +34,18 @@ class Follower(Node):
         self.stop_i = 0                           # which entry of 'stops' is next
 
         self.declare_parameter('route_map_file', '')  # empty = installed station-loop configuration
+        self.declare_parameter('site_map_file', '')   # taught map from build_map; empty = loop-only planner
         self.declare_parameter('targets', [''])      # e.g. [S1, S3]; empty = use route/stops as given
         targets = [t for t in self.get_parameter('targets').value if t]
         if targets:
             route_map = load_route_map(self.get_parameter('route_map_file').value or None)
-            route, stops = plan_mission(targets, route_map)
+            site_map_file = self.get_parameter('site_map_file').value
+            if site_map_file:
+                codes = {s['name']: s['navicode'] for s in route_map['stations']}
+                route, stops = route_planner.plan_mission(
+                    route_planner.load_map(site_map_file), [codes[t] for t in targets], home=codes['START'])
+            else:
+                route, stops = plan_mission(targets, route_map)
             self.set_parameters([rclpy.parameter.Parameter('route', value=route),
                                  rclpy.parameter.Parameter('stops', value=stops)])
             self.get_logger().info(f'mission {targets}: route {"".join(route)}, stops {stops}')

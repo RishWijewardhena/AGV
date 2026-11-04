@@ -12,6 +12,8 @@ from launch.actions import DeclareLaunchArgument, ExecuteProcess, OpaqueFunction
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
+from launch_ros.parameter_descriptions import ParameterValue
+
 
 from agv_sim.tape_map import START_POSE
 from agv_sim.world_builder import write_world
@@ -28,7 +30,7 @@ def start_gazebo(context):
 def generate_launch_description():
     x, y, yaw = START_POSE
     robot_file = LaunchConfiguration('robot_file')
-    targets= LaunchConfiguration('targets')
+    targets = LaunchConfiguration('targets')
     return LaunchDescription([
         DeclareLaunchArgument('headless', default_value='false',
                               description='Run gzserver in headless mode'),
@@ -36,17 +38,20 @@ def generate_launch_description():
             'robot_file',
             default_value=PathJoinSubstitution([FindPackageShare('agv_sim'), 'models', 'agv_box.sdf']),
             description='robot model to spawn (SDF or URDF)'),
- 
+
         DeclareLaunchArgument('targets', default_value='[S2]',
                               description='stations to visit in order, e.g. [S1,S3]'),
 
         DeclareLaunchArgument('trip_file', default_value='maps/trips/trip.json',
                               description='Where tape_recorder saves the trip (relative to the launch folder)'),
 
+        DeclareLaunchArgument('route', default_value='[R]'),
+        DeclareLaunchArgument('stops', default_value='[2, 4]'),
+
+        DeclareLaunchArgument('site_map', default_value='',
+                              description='taught map from build_map; empty = loop-only planner'),
 
         OpaqueFunction(function=start_gazebo),
-
-
 
         Node(package='ros_gz_sim', executable='create', output='screen',
              arguments=['-world', 'agv_world', '-file', robot_file, '-name', 'agv',
@@ -59,16 +64,20 @@ def generate_launch_description():
              parameters=[{'use_sim_time': True}]),
 
         Node(package='agv_control', executable='line_follower', name='line_follower', output='screen',
-             parameters=[{'use_sim_time': True}],
-             ros_arguments=['-p', ['targets:=', targets]],
-             remappings=[('cmd_vel','/cmd_vel_raw')]),
-        Node(package='agv_control',executable='tape_recorder', name='tape_recorder', output='screen',
+             parameters=[{'use_sim_time': True,
+                          'site_map_file': ParameterValue(LaunchConfiguration('site_map'), value_type=str)}],
+             ros_arguments=['-p', ['targets:=', targets],
+                            '-p', ['route:=', LaunchConfiguration('route')],
+                            '-p', ['stops:=', LaunchConfiguration('stops')]],
+             remappings=[('cmd_vel', '/cmd_vel_raw')]),
+
+        Node(package='agv_control', executable='tape_recorder', name='tape_recorder', output='screen',
              parameters=[{'use_sim_time': True, 'output': LaunchConfiguration('trip_file')}]),
 
-        Node (package='agv_control', executable='wheel_odometry',name='wheel_odometry', output='screen',
-              parameters=[{'use_sim_time': True}]),
+        Node(package='agv_control', executable='wheel_odometry', name='wheel_odometry', output='screen',
+             parameters=[{'use_sim_time': True}]),
 
-        Node(package='agv_sim',executable='gazebo_mts160', name='gazebo_mts160', output='screen',
+        Node(package='agv_sim', executable='gazebo_mts160', name='gazebo_mts160', output='screen',
              parameters=[{'use_sim_time': True}]),
 
         Node(package='tf2_ros', executable='static_transform_publisher', name='lidar_tf',
@@ -76,7 +85,6 @@ def generate_launch_description():
                         '--frame-id', 'base_link', '--child-frame-id', 'lidar_link'],
              parameters=[{'use_sim_time': True}]),
 
-                
         Node(package='ros_gz_bridge', executable='parameter_bridge', name='gazebo_bridge',
              output='screen',
              arguments=[
