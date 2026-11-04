@@ -3,7 +3,8 @@
 import math
 
 SENSOR_X = 0.25      # m from the drive axle to the MTS160
-FLIP={'L':'R', 'R':'L'}
+FLIP = {'L': 'R', 'R': 'L'}
+
 
 def ports(passage):
     """(port the robot came in through, port it left through) at this node."""
@@ -12,6 +13,7 @@ def ports(passage):
     if passage['kind'] == 'merge':
         return FLIP[passage['side']], 'T'
     return 'T', 'T'                           # a station has a single end
+
 
 def find_node(nodes, passage, tolerance):
     """Index of the node this passage belongs to; adds a new node if none matches."""
@@ -39,8 +41,8 @@ def build(passage_list, tolerance=0.3):
         if passage['kind'] == 'turn':
             turned = True
             continue
-        if passage['kind'] == 'unknown':
-            last = None                       # unsure which ports were used: skip this edge
+        if passage['kind'] in ('unknown', 'gap'):
+            last = None                       # unsure which ports, or a new trip: no edge
             continue
         node = find_node(nodes, passage, tolerance)
         came_in, leaves = ports(passage)
@@ -57,7 +59,6 @@ def build(passage_list, tolerance=0.3):
     return nodes, edges
 
 
-
 def sensor_point(event, sensor_x=SENSOR_X):
     """Return the sensor position for an event stamped at ``base_link``.
 
@@ -67,9 +68,12 @@ def sensor_point(event, sensor_x=SENSOR_X):
     return (event['x'] + sensor_x * math.cos(event['th']),
             event['y'] + sensor_x * math.sin(event['th']))
 
+
 def anchor(trip, code=4):
-    """Express the trip relative to the first pass over station `code`:
-    the station is at (0, 0) and the robot's heading there is +x."""
+    """Express the trip relative to the first pass over station `code`.
+
+    The station is at (0, 0) and the robot's heading there is +x.
+    """
     ref = next(e for e in trip if e['event'] == 'station' and e['code'] == code)
     ax, ay = sensor_point(ref)
     c, s = math.cos(ref['th']), math.sin(ref['th'])
@@ -96,7 +100,6 @@ def passages(trip):
             # Place a junction at the first detection, then wait for its
             # matching end event to determine its kind and side.
             start = event
-            
         elif kind in ('fork', 'merge', 'unknown'):
             # An unmatched end means recording began after the junction had
             # already started, so there is no reliable point to add.
@@ -122,23 +125,27 @@ def open_ports(nodes, edges):
     return [(i, port) for i, node in enumerate(nodes) if node['kind'] == 'junction'
             for port in ('T', 'L', 'R') if (i, port) not in used]
 
+
 def main(argv=None):
     import argparse
     import json
     parser = argparse.ArgumentParser(description='Build a tape map from a recorded trip.')
-    parser.add_argument('trip', help='trip JSON written by tape_recorder')
+    parser.add_argument('trips', nargs='+', help='trip JSON files written by tape_recorder')
     parser.add_argument('-o', '--output', help='map JSON to write (default: only print)')
     parser.add_argument('--anchor', type=int, default=4, help='Navicode of the reference station')
     parser.add_argument('--tolerance', type=float, default=0.3, help='m; junction grouping distance')
     args = parser.parse_args(argv)
 
-    with open(args.trip, encoding='utf-8') as f:
-        trip = json.load(f)
-    try:
-        trip = anchor(trip, args.anchor)
-    except StopIteration:
-        parser.exit(1, f'the trip never passed station {args.anchor}\n')
-    nodes, edges = build(passages(trip), args.tolerance)
+    passage_list = []
+    for name in args.trips:
+        with open(name, encoding='utf-8') as f:
+            trip = json.load(f)
+        try:
+            trip = anchor(trip, args.anchor)
+        except StopIteration:
+            parser.exit(1, f'{name} never passed station {args.anchor}\n')
+        passage_list += [{'kind': 'gap'}] + passages(trip)
+    nodes, edges = build(passage_list, args.tolerance)
 
     for i, node in enumerate(nodes):
         name = f"station {node['code']}" if node['kind'] == 'station' else 'junction'
