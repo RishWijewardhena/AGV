@@ -51,6 +51,9 @@ def generate_launch_description():
         DeclareLaunchArgument('site_map', default_value='',
                               description='taught map from build_map; empty = loop-only planner'),
 
+        DeclareLaunchArgument('explore', default_value='false',
+                              description='follower waits for an Explore action goal instead of a mission'),
+
         OpaqueFunction(function=start_gazebo),
 
         Node(package='ros_gz_sim', executable='create', output='screen',
@@ -65,7 +68,8 @@ def generate_launch_description():
 
         Node(package='agv_control', executable='line_follower', name='line_follower', output='screen',
              parameters=[{'use_sim_time': True,
-                          'site_map_file': ParameterValue(LaunchConfiguration('site_map'), value_type=str)}],
+                          'site_map_file': ParameterValue(LaunchConfiguration('site_map'), value_type=str),
+                          'explore': ParameterValue(LaunchConfiguration('explore'), value_type=bool)}],
              ros_arguments=['-p', ['targets:=', targets],
                             '-p', ['route:=', LaunchConfiguration('route')],
                             '-p', ['stops:=', LaunchConfiguration('stops')]],
