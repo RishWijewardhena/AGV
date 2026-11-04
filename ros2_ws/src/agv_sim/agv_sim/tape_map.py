@@ -91,8 +91,9 @@ R_SPUR = 0.8     # radius of the junction arcs (m)
 STEM = 1.5       # length of a station stem (m)
 TAG_AT = 1.0     # Navicode tag distance along the stem from its base (m)
 START_POSE = (-3.25, 2.5, 0.0)   # x, y, heading (rad): on the START stem, facing the loop
-SPURS = [('START', 4, -1, 2.5, -90),
-         ('S3', 3, 4, 0, 0),
+SPURS = [('START', 4, -1, 2.5, -90),     # name, Navicode, junction point on the loop, loop direction (deg)
+         ('S3', 3, 4, 0, 0),           # counter-clockwise order: mission_planner relies on it
+         ('S4', 5, 9, 2.5, 90),
          ('S2', 2, 6, 5, 180),
          ('S1', 1, 2.5, 5, 180)]
 

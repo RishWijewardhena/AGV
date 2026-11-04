@@ -8,12 +8,16 @@ from agv_control.mission_planner import leg, load_route_map, plan_mission
 
 CONFIG = Path(__file__).resolve().parents[1] / 'config/station_loop.json'
 LEGS = {
-    ('START', 'S3'): 'RRRR', ('START', 'S2'): 'LLRRLL',
-    ('START', 'S1'): 'LLLL', ('S3', 'START'): 'LLLL',
-    ('S3', 'S2'): 'RRRR', ('S3', 'S1'): 'LLRRLL',
-    ('S2', 'START'): 'RRLLRR', ('S2', 'S3'): 'LLLL',
-    ('S2', 'S1'): 'RRRR', ('S1', 'START'): 'RRRR',
-    ('S1', 'S3'): 'RRLLRR', ('S1', 'S2'): 'LLLL',
+    ('START', 'S3'): 'RRRR', ('START', 'S4'): 'RRLLRR',
+    ('START', 'S2'): 'LLRRLL', ('START', 'S1'): 'LLLL',
+    ('S3', 'START'): 'LLLL', ('S3', 'S4'): 'RRRR',
+    ('S3', 'S2'): 'RRLLRR', ('S3', 'S1'): 'LLRRLL',
+    ('S4', 'START'): 'LLRRLL', ('S4', 'S3'): 'LLLL',
+    ('S4', 'S2'): 'RRRR', ('S4', 'S1'): 'RRLLRR',
+    ('S2', 'START'): 'RRLLRR', ('S2', 'S3'): 'LLRRLL',
+    ('S2', 'S4'): 'LLLL', ('S2', 'S1'): 'RRRR',
+    ('S1', 'START'): 'RRRR', ('S1', 'S3'): 'RRLLRR',
+    ('S1', 'S4'): 'LLRRLL', ('S1', 'S2'): 'LLLL',
 }
 
 
