@@ -143,7 +143,7 @@ spurs. Keep `SPURS` in counter-clockwise order. When adding a station, also:
 
 - **World:** at every launch, `world_builder.py` writes `/tmp/agv_station_loop.sdf` from `tape_map.py`. The Gazebo track is therefore always identical to the RViz one. Tape (25 × 1.3 mm) and Navicode markers are visual only, so the wheels never bump over tape edges.
 - **Robot:** spawned at START with `ros_gz_sim create`; `robot:=box` swaps in the box robot. The launch's `ROBOTS` table passes each model's geometry to the nodes below. Add `headless:=true` to run without the Gazebo window.
-- **Virtual MTS160** (`gazebo_mts160`): uses the same `read_mts160` and marker maths as `sim_node`, but takes the pose from Gazebo's physics instead of integrating `/cmd_vel`. The mounting position is the `mts160_x` parameter (default 0.27 m ahead of the axle, the CAD bracket).
+- **Virtual MTS160** (`gazebo_mts160`): uses the same `read_mts160` and marker maths as `sim_node`, but takes the pose from Gazebo's physics instead of integrating `/cmd_vel`. The mounting position is the `mts160_x` parameter (default 0.30 m ahead of the axle, the CAD housing centre).
 - **Obstacle stop** (`agv_control/obstacle_stop`): the only `/cmd_vel` publisher.
   - It holds the robot when any of the 4 sensors reads 0.40 m or less, or when sensor data is missing or older than 0.3 s.
   - It resumes after all 4 sensors read at least 0.55 m for 0.5 s.
@@ -163,7 +163,7 @@ drive axle, +x forward.
 | Body | 0.70 × 0.46 m plate, 56 kg with the CAD inertia; collision box 0.70 × 0.46 × 0.29 m |
 | Drive wheels | 130 mm diameter, centres 0.3744 m apart; sphere collisions, both axes +y |
 | Casters | four 2-inch wheels at x = 0.272 / −0.318 m, y = ±0.175 m, as sprung spheres (±5 mm) |
-| MTS160 | not in the CAD; placeholder at the bracket, x = 0.27 m, bottom 20 mm above the floor |
+| MTS160 | in the CAD body: housing x = 0.285–0.320 m, bottom 38 mm above the floor; read at x = 0.30 m |
 | Ultrasonic | 4 `gpu_lidar` fans (±30° like the URM09, 0.02–5 m, 10 Hz) at x = ±0.38, y = ±0.18 m, 0.105 m up |
 | Lidar | x = 0.312 m, 0.317 m up (RPLidar head in the CAD) |
 | Drive limits | 0.5 m/s, 1 rad/s |
@@ -172,15 +172,19 @@ Casters and the linear rails are drawn fixed to the body (the CAD has them swive
 CAD's left wheel axis is reversed and its casters sit 2 mm below the drive wheels; the model fixes
 the first, and the caster springs absorb the second.
 
-The CAD body mesh was 523 MB (6.9 M triangles). `tools/decimate_dae.py` reduces it to about
-0.23 M triangles (18 MB), part by part so materials stay. After a new Fusion export:
+The CAD body mesh was 523 MB (6.9 M triangles, 4.7 M of them in hidden bearing balls).
+`tools/decimate_dae.py` merges points on a 2 mm grid, part by part so materials stay, and copies
+the lidar and linear actuators unchanged: 0.47 M triangles, 36 MB. After a new Fusion export:
 
 ```bash
 cd "/media/rishmika/Shared Data/Idea8/AGV"
-venv/bin/pip install fast-simplification numpy          # once
+venv/bin/pip install numpy                              # once
 venv/bin/python ros2_ws/src/agv_sim/tools/decimate_dae.py \
-    <export>/meshes/base_link/base_link.dae ros2_ws/src/agv_sim/meshes/cad/body.dae
+    <export>/meshes/base_link/base_link.dae ros2_ws/src/agv_sim/meshes/cad/body.dae \
+    --cell 0.002 --keep 'igs|Actuator|actuator'
 ```
+
+`--keep` is a regex of CAD material names copied exactly (`igs` = the RPLidar parts).
 
 The box robot (`robot:=box`) keeps the earlier provisional values: 600 × 460 mm body, 131 mm
 wheels 0.40 m apart, MTS160 at 0.25 m.
@@ -290,7 +294,7 @@ agv_sim/
 │   └── gazebo.launch.py   Gazebo station loop, robot spawn, sensors, obstacle stop
 ├── models/agv_cad.sdf      CAD robot for Gazebo (default)
 ├── models/agv_box.sdf      provisional box robot (robot:=box)
-├── meshes/cad/             CAD meshes for agv_cad.sdf (body decimated)
+├── meshes/cad/             CAD meshes for agv_cad.sdf (body reduced by tools/decimate_dae.py)
 ├── tools/decimate_dae.py   shrinks a Fusion COLLADA export (run with the project venv)
 ├── urdf/, meshes/*.STL     older CAD export (display only, not used by the launches)
 ├── rviz/agv_sim.rviz       RViz configuration
