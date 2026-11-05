@@ -1,19 +1,20 @@
-"""Shrink a Fusion-exported COLLADA mesh for simulation by decimating every part separately.
+"""Shrink a Fusion-exported COLLADA mesh for simulation by vertex clustering, part by part.
 
 The Fusion URDF exporter writes one <geometry> with a shared position array and one
-<triangles> block per CAD body and material. Each block is simplified on its own, so
-parts keep their materials; everything outside <library_geometries> is copied unchanged.
-The file is read through mmap because the source can be hundreds of MB.
+<triangles> block per CAD body and material. In each block, points in the same grid cell
+are merged into their average and collapsed triangles are dropped, so every surface stays
+within one cell of the CAD and no spikes appear; parts keep their materials. Everything
+outside <library_geometries> is copied unchanged. The file is read through mmap because
+the source can be hundreds of MB.
 
-    venv/bin/python ros2_ws/src/agv_sim/tools/decimate_dae.py base_link.dae base_link_light.dae \
-        --faces 150000
+    venv/bin/python ros2_ws/src/agv_sim/tools/decimate_dae.py base_link.dae body.dae --cell 0.002 \
+        --keep 'igs|Actuator|actuator'
 """
 
 import argparse
 import mmap
 import re
 
-import fast_simplification
 import numpy as np
 
 
@@ -44,26 +45,24 @@ def proper(faces):
     return faces[(faces[:, 0] != faces[:, 1]) & (faces[:, 1] != faces[:, 2]) & (faces[:, 0] != faces[:, 2])]
 
 
-def simplify(points, faces, keep):
-    """Weld duplicate points, decimate to about `keep` faces, keep the part inside its own box.
-
-    Quadric decimation may move a point off thin parts; clipping stops it leaving the part.
-    """
-    points, inverse = np.unique(np.round(points, 6), axis=0, return_inverse=True)
-    faces = proper(inverse.reshape(-1)[faces])
-    if len(faces) > keep:
-        low, high = points.min(axis=0), points.max(axis=0)
-        points, faces = fast_simplification.simplify(points, faces, target_reduction=1 - keep / len(faces))
-        points = np.clip(points, low, high)
-    return points, faces
+def simplify(points, faces, cell):
+    """Merge the points in each `cell`-sized grid cube; keep each remaining triangle once."""
+    cells, inverse = np.unique(np.floor(points / cell).astype(np.int64), axis=0, return_inverse=True)
+    inverse = inverse.reshape(-1)
+    merged = np.zeros((len(cells), 3))
+    np.add.at(merged, inverse, points)
+    merged /= np.bincount(inverse)[:, None]
+    faces = proper(inverse[faces])
+    faces = faces[np.unique(np.sort(faces, axis=1), axis=0, return_index=True)[1]]
+    return merged, faces
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument('source')
     parser.add_argument('output')
-    parser.add_argument('--faces', type=int, default=150000, help='target triangles in total')
-    parser.add_argument('--min-faces', type=int, default=400, help='blocks this small are kept as they are')
+    parser.add_argument('--cell', type=float, default=0.002, help='grid cell size (m): the largest shape error')
+    parser.add_argument('--keep', default='', help='regex of material names copied without simplifying')
     args = parser.parse_args()
 
     with open(args.source, 'rb') as f:
@@ -75,18 +74,20 @@ def main():
     positions = floats(data, *array_body(data, f'{geo_id}-positions-array')).reshape(-1, 3)
 
     found = list(blocks(data, lib_start, lib_end))
-    weight = sum(count ** 0.5 for _, count, *_ in found)    # sqrt: small parts keep relatively more detail
     parts, out_points, n_points, n_in, n_out = [], [], 0, 0, 0
     for material, count, stride, vertex, start, end in found:
+        n_in += count
         index = np.fromstring(data[start:end].decode(), dtype=np.int64, sep=' ')
         faces = index.reshape(-1, stride)[:, vertex].reshape(-1, 3)
         used, local = np.unique(faces, return_inverse=True)
-        keep = max(args.min_faces, int(args.faces * count ** 0.5 / weight))
-        points, faces = simplify(positions[used], local.reshape(-1, 3), keep)
+        points, faces = positions[used], local.reshape(-1, 3)
+        if not (args.keep and re.search(args.keep, material)):
+            points, faces = simplify(points, faces, args.cell)
+        if not len(faces):                    # smaller than a cell: leave the part out
+            continue
         parts.append((material, faces + n_points))
         out_points.append(points)
         n_points += len(points)
-        n_in += count
         n_out += len(faces)
     points = np.concatenate(out_points)
 
@@ -118,7 +119,7 @@ def main():
             face += len(faces)
         out.write('</mesh>\n</geometry>\n</library_geometries>')
         out.write(data[lib_end:].decode())
-    print(f'{len(parts)} parts, {n_in} -> {n_out} triangles, {len(points)} points')
+    print(f'{len(parts)} of {len(found)} parts, {n_in} -> {n_out} triangles, {len(points)} points')
 
 
 if __name__ == '__main__':
