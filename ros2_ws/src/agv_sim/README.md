@@ -162,15 +162,17 @@ drive axle, +x forward.
 |---|---|
 | Body | 0.70 × 0.46 m plate, 56 kg with the CAD inertia; collision box 0.70 × 0.46 × 0.29 m |
 | Drive wheels | 130 mm diameter, centres 0.3744 m apart; sphere collisions, both axes +y |
-| Casters | four 2-inch wheels at x = 0.272 / −0.318 m, y = ±0.175 m, as sprung spheres (±5 mm) |
+| Casters | four 2-inch swivel casters, stems at x = ±0.295 m, y = ±0.175 m, wheels trailing 23 mm; sprung (±5 mm) |
 | MTS160 | in the CAD body: housing x = 0.285–0.320 m, bottom 38 mm above the floor; read at x = 0.30 m |
 | Ultrasonic | 4 `gpu_lidar` fans (±30° like the URM09, 0.02–5 m, 10 Hz) at x = ±0.38, y = ±0.18 m, 0.105 m up |
 | Lidar | x = 0.312 m, 0.317 m up (RPLidar head in the CAD) |
 | Drive limits | 0.5 m/s, 1 rad/s |
 
-Casters and the linear rails are drawn fixed to the body (the CAD has them swivel and slide). The
-CAD's left wheel axis is reversed and its casters sit 2 mm below the drive wheels; the model fixes
-the first, and the caster springs absorb the second.
+Each caster is a chain: the stem and top plate ride on the spring, the fork swivels freely, and
+the wheel rolls; sideways friction on the trailing wheel turns the fork. The linear rails are
+drawn fixed to the body (the CAD has them slide). The CAD's left wheel axis is reversed and its
+casters sit 2 mm below the drive wheels; the model fixes the first and raises the caster wheels
+by 2 mm for the second.
 
 The CAD body mesh was 523 MB (6.9 M triangles, 4.7 M of them in hidden bearing balls).
 `tools/decimate_dae.py` merges points on a 2 mm grid, part by part so materials stay, and copies
@@ -305,7 +307,7 @@ agv_sim/
 ## Limits and next steps
 
 - The CAD wheels are 130 mm; the measured real wheel was given as 131 mm. Check before hardware odometry.
-- The CAD casters do not swivel in simulation, and the caster springs are provisional values.
+- The caster springs and the fork damping are provisional values.
 - A Navicode is modelled as one 50 mm square. The real sensor decodes a pattern of several markers.
 - The virtual MTS160 is geometric. It doesn't model magnetic field strength, edge effects or noise.
 - The turn-around counts its angle from message timing, so an obstacle hold during a spin makes it think it has turned further than it did.
