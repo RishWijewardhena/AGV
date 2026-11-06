@@ -12,6 +12,9 @@ This package does not depend on Gazebo or RViz.
   linear.x/angular.z to direct-drive wheel RPM and calls the existing Controller.
 - `config/robot.yaml`: serial port, motor directions and limits. Wheel radius and spacing
   come from `agv_description/config/geometry.yaml`.
+- `launch/robot.launch.py` also starts `robot_state_publisher` with the `agv_description`
+  URDF, so RViz on a laptop in the same ROS domain shows the robot and its sensor frames.
+  The wheels appear once `motor_node` publishes `/joint_states` (not done yet).
 
 The copied library retains the original functions. Local changes are PyModbus
 3.6.x compatibility (`slave=`), bounded reads, checked write errors, detection of
