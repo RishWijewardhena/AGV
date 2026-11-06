@@ -18,7 +18,7 @@ class GazeboMTS160(Node):
     def __init__(self):
         super().__init__('gazebo_mts160')
         self.declare_parameter('model_name', 'agv')
-        self.declare_parameter('mts160_x', 0.25)        # m ahead of the drive axle
+        self.declare_parameter('mts160_x', 0.30)        # m ahead of the drive axle (CAD housing centre)
         self.model_name = self.get_parameter('model_name').value
         self.sensor_x = self.get_parameter('mts160_x').value
 

@@ -15,6 +15,7 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
         (os.path.join('share', package_name, 'rviz'), glob('rviz/*.rviz')),
         (os.path.join('share', package_name, 'models'), glob('models/*sdf')),
+        (os.path.join('share', package_name, 'meshes', 'cad'), glob('meshes/cad/*.dae')),
 
     ],
     install_requires=['setuptools'],

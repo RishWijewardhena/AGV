@@ -9,11 +9,12 @@ from sensor_msgs.msg import LaserScan, Range
 from tf2_ros import StaticTransformBroadcaster
 
 
+# Default (x, y, z, yaw) of each sensor origin in base_link: the CAD model (models/agv_cad.sdf).
 MOUNTS = {
-    'front_left':  (0.31,  0.20, 0.18, 0.0),
-    'front_right': (0.31, -0.20, 0.18, 0.0),
-    'rear_left':   (-0.31,  0.20, 0.18, math.pi),
-    'rear_right':  (-0.31, -0.20, 0.18, math.pi),
+    'front_left':  (0.38,  0.18, 0.105, 0.0),
+    'front_right': (0.38, -0.18, 0.105, 0.0),
+    'rear_left':   (-0.38,  0.18, 0.105, math.pi),
+    'rear_right':  (-0.38, -0.18, 0.105, math.pi),
 }
 
 
@@ -46,7 +47,8 @@ class UltrasonicSim(Node):
 
         transforms = []
 
-        for name, (x, y, z, yaw) in MOUNTS.items():
+        for name, mount in MOUNTS.items():
+            x, y, z, yaw = self.declare_parameter(name, list(mount)).value
             self.publishers_by_name[name] = self.create_publisher(
                 Range,
                 f'/ultrasonic/{name}',

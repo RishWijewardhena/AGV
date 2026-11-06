@@ -11,11 +11,8 @@ from sensor_msgs.msg import LaserScan
 NAMES =('front_left', 'front_right', 'rear_left', 'rear_right')
 SOURCES=NAMES+('lidar_front',)
 MAX_AGE={'lidar_front': 0.5}
-LIDAR_X=0.22 # lidar ahead of base_link
-BUMPER_X=0.30 #base link to front face
-HALF_WIDTH=0.28 # half the width of the robot
 
-def front_gap(ranges,angle_min,angle_increment,range_min,range_max):
+def front_gap(ranges,angle_min,angle_increment,range_min,range_max,lidar_x,bumper_x,half_width):
     """
     Disatnce from the bumper to the closest scan point in the corridor
     """
@@ -30,12 +27,12 @@ def front_gap(ranges,angle_min,angle_increment,range_min,range_max):
 
         a=angle_min+i*angle_increment
         #convert the(r,a) into base_link x
-        x=r*math.cos(a)+LIDAR_X
+        x=r*math.cos(a)+lidar_x
         y=r*math.sin(a)
 
-        #keep the only points ahead of the bumper and inside |y| <=HALF_WIDTH
-        if x > BUMPER_X and abs(y) <= HALF_WIDTH:
-            gap = min(gap, x - BUMPER_X)
+        #keep the only points ahead of the bumper and inside |y| <=half_width
+        if x > bumper_x and abs(y) <= half_width:
+            gap = min(gap, x - bumper_x)
 
     return gap
 
@@ -95,6 +92,12 @@ class ObstacleStop(Node):
         self.command_time = None
         self.previous_blocked = None
 
+        self.declare_parameter('lidar_x', 0.312)    # lidar ahead of base_link (CAD AGV_Design_4)
+        self.declare_parameter('bumper_x', 0.375)   # base_link to the front face
+        self.declare_parameter('half_width', 0.28)  # half the body width (0.23 m) plus a margin
+        self.lidar_x, self.bumper_x, self.half_width = (
+            self.get_parameter(name).value for name in ('lidar_x', 'bumper_x', 'half_width'))
+
         self.publisher =self.create_publisher(Twist, 'cmd_vel', 10)
         self.create_subscription(Twist , '/cmd_vel_raw',self.on_command,10)
         self.create_subscription(LaserScan, '/scan', self.on_scan, qos_profile_sensor_data)
@@ -124,7 +127,8 @@ class ObstacleStop(Node):
             self.command_time = None
 
     def on_scan(self, message):
-        gap= front_gap(message.ranges,message.angle_min,message.angle_increment,message.range_min,message.range_max)
+        gap= front_gap(message.ranges,message.angle_min,message.angle_increment,message.range_min,message.range_max,
+                       self.lidar_x,self.bumper_x,self.half_width)
         stamp = message.header.stamp.sec + message.header.stamp.nanosec * 1e-9
         self.gate.update('lidar_front', gap, stamp)
 
