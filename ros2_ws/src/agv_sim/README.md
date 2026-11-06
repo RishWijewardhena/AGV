@@ -160,8 +160,9 @@ drive axle, +x forward.
 
 | Part | Value |
 |---|---|
-| Body | 0.70 × 0.46 m plate, 56 kg with the CAD inertia; collision box 0.70 × 0.46 × 0.29 m |
-| Drive wheels | 130 mm diameter, centres 0.3744 m apart; sphere collisions, both axes +y |
+| Mass | 30 kg in total, as weighed (Fusion's materials give 60 kg) |
+| Body | 0.70 × 0.46 m plate, 23.9 kg: the CAD centre of mass, CAD inertia scaled to the mass; collision box 0.70 × 0.46 × 0.29 m |
+| Drive wheels | 131 mm hub motors (datasheet and measured; the CAD has 130 mm), 1.95 kg each, centres 0.3744 m apart; sphere collisions, both axes +y |
 | Casters | four 2-inch swivel casters, stems at x = ±0.295 m, y = ±0.175 m, wheels trailing 23 mm; sprung (±5 mm) |
 | MTS160 | in the CAD body: housing x = 0.285–0.320 m, bottom 38 mm above the floor; read at x = 0.30 m |
 | Ultrasonic | 4 `gpu_lidar` fans (±30° like the URM09, 0.02–5 m, 10 Hz) at x = ±0.38, y = ±0.18 m, 0.105 m up |
@@ -306,7 +307,7 @@ agv_sim/
 
 ## Limits and next steps
 
-- The CAD wheels are 130 mm; the measured real wheel was given as 131 mm. Check before hardware odometry.
+- The centre of mass comes from the CAD, whose masses are off by a factor of two. Weighing the drive axle alone would place it.
 - The caster springs and the fork damping are provisional values.
 - A Navicode is modelled as one 50 mm square. The real sensor decodes a pattern of several markers.
 - The virtual MTS160 is geometric. It doesn't model magnetic field strength, edge effects or noise.

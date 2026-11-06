@@ -12,7 +12,7 @@ class WheelOdometryNode(Node):
 
     def __init__(self):
         super().__init__('wheel_odometry_node')
-        self.declare_parameter('wheel_diameter', 0.130)  # CAD AGV_Design_4
+        self.declare_parameter('wheel_diameter', 0.131)  # datasheet and measured
         self.declare_parameter('track_width', 0.3744)
         self.declare_parameter('counts_per_rev', 4096)
         self.declare_parameter('left_joint','left_wheel_joint')
