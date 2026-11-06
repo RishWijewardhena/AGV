@@ -14,7 +14,7 @@ There are two simulations of the same track:
 |---|---|---|
 | Launch | `sim.launch.py` | `gazebo.launch.py` |
 | Robot motion | ideal unicycle model in `sim_node` | Gazebo physics, `DiffDrive` plugin |
-| Robot model | none (TF axes only) | `models/agv_cad.sdf` (Fusion CAD), or `models/agv_box.sdf` |
+| Robot model | `agv_description` URDF, drawn at zero joint angles | `agv_description` URDF with its Gazebo parts |
 | Ultrasonic obstacle stop | no | yes |
 | Mapping (recorder, exploration) | no | yes |
 | Status | complete | missions and exploration verified headless |
@@ -87,7 +87,6 @@ ros2 launch agv_sim gazebo.launch.py targets:="[S1,S3]"
 | `route`, `stops` | `[R]`, `[2, 4]` | Explicit junction sides and stop codes, used with `targets:="['']"` |
 | `explore` | `false` | `true`: the follower waits for an `Explore` action goal instead of a mission |
 | `trip_file` | `maps/trips/trip.json` | Where `tape_recorder` saves the trip (relative to the launch folder) |
-| `robot` | `cad` | `cad` (AGV_Design_4 from Fusion) or `box` (provisional box robot) |
 | `headless` | `false` | `true` runs Gazebo without its window |
 
 The follower's output goes through the obstacle gate:
@@ -142,8 +141,9 @@ spurs. Keep `SPURS` in counter-clockwise order. When adding a station, also:
 ### How the pieces work
 
 - **World:** at every launch, `world_builder.py` writes `/tmp/agv_station_loop.sdf` from `tape_map.py`. The Gazebo track is therefore always identical to the RViz one. Tape (25 × 1.3 mm) and Navicode markers are visual only, so the wheels never bump over tape edges.
-- **Robot:** spawned at START with `ros_gz_sim create`; `robot:=box` swaps in the box robot. The launch's `ROBOTS` table passes each model's geometry to the nodes below. Add `headless:=true` to run without the Gazebo window.
-- **Virtual MTS160** (`gazebo_mts160`): uses the same `read_mts160` and marker maths as `sim_node`, but takes the pose from Gazebo's physics instead of integrating `/cmd_vel`. The mounting position is the `mts160_x` parameter (default 0.30 m ahead of the axle, the CAD housing centre).
+- **Robot:** `robot_state_publisher` publishes the `agv_description` URDF (`sim:=true`), and `ros_gz_sim create` spawns it at START from `/robot_description`. The nodes below get their geometry from `agv_description/config/geometry.yaml`. Add `headless:=true` to run without the Gazebo window.
+- **TF:** `wheel_odometry` publishes `odom → base_link`, as on the real robot; `robot_state_publisher` publishes the wheels, casters and sensor frames from `/joint_states`. `DiffDrive`'s own odometry stays inside Gazebo.
+- **Virtual MTS160** (`gazebo_mts160`): uses the same `read_mts160` and marker maths as `sim_node`, but takes the pose from Gazebo's physics instead of integrating `/cmd_vel`. The mounting position is the `mts160_x` parameter, 0.30 m ahead of the axle (the CAD housing centre) from `geometry.yaml`.
 - **Obstacle stop** (`agv_control/obstacle_stop`): the only `/cmd_vel` publisher.
   - It holds the robot when any of the 4 sensors reads 0.40 m or less, or when sensor data is missing or older than 0.3 s.
   - It resumes after all 4 sensors read at least 0.55 m for 0.5 s.
@@ -152,57 +152,9 @@ spurs. Keep `SPURS` in counter-clockwise order. When adding a station, also:
 
 Gazebo's `DiffDrive` keeps the last command it received. `obstacle_stop` sends zero when commands stop, so keep it running until the robot has stopped.
 
-### The CAD robot: `models/agv_cad.sdf`
+### The robot model
 
-Built from the Fusion export `AGV_Design_4` (`/home/rishmika/Documents/URDF4`). The visuals are the
-CAD meshes in `meshes/cad/`; physics uses simple shapes. The model origin is the floor under the
-drive axle, +x forward.
-
-| Part | Value |
-|---|---|
-| Mass | 30 kg in total, as weighed (Fusion's materials give 60 kg) |
-| Body | 0.70 × 0.46 m plate, 23.9 kg: the CAD centre of mass, CAD inertia scaled to the mass; collision box 0.70 × 0.46 × 0.29 m |
-| Drive wheels | 131 mm hub motors (datasheet and measured; the CAD has 130 mm), 1.95 kg each, centres 0.3744 m apart; sphere collisions, both axes +y |
-| Casters | four 2-inch swivel casters, stems at x = ±0.295 m, y = ±0.175 m, wheels trailing 23 mm; sprung (±5 mm) |
-| MTS160 | in the CAD body: housing x = 0.285–0.320 m, bottom 38 mm above the floor; read at x = 0.30 m |
-| Ultrasonic | 4 `gpu_lidar` fans (±30° like the URM09, 0.02–5 m, 10 Hz) at x = ±0.38, y = ±0.18 m, 0.105 m up |
-| Lidar | x = 0.312 m, 0.317 m up (RPLidar head in the CAD) |
-| Drive limits | 0.5 m/s, 1 rad/s |
-
-Each caster is a chain: the stem and top plate ride on the spring, the fork swivels freely, and
-the wheel rolls; sideways friction on the trailing wheel turns the fork. The linear rails are
-drawn fixed to the body (the CAD has them slide). The CAD's left wheel axis is reversed and its
-casters sit 2 mm below the drive wheels; the model fixes the first and raises the caster wheels
-by 2 mm for the second.
-
-The CAD body mesh was 523 MB (6.9 M triangles, 4.7 M of them in hidden bearing balls).
-`tools/decimate_dae.py` merges points on a 2 mm grid, part by part so materials stay, and copies
-the lidar and linear actuators unchanged: 0.47 M triangles, 36 MB. After a new Fusion export:
-
-```bash
-cd "/media/rishmika/Shared Data/Idea8/AGV"
-venv/bin/pip install numpy                              # once
-venv/bin/python ros2_ws/src/agv_sim/tools/decimate_dae.py \
-    <export>/meshes/base_link/base_link.dae ros2_ws/src/agv_sim/meshes/cad/body.dae \
-    --cell 0.002 --keep 'igs|Actuator|actuator'
-```
-
-`--keep` is a regex of CAD material names copied exactly (`igs` = the RPLidar parts).
-
-The box robot (`robot:=box`) keeps the earlier provisional values: 600 × 460 mm body, 131 mm
-wheels 0.40 m apart, MTS160 at 0.25 m.
-
-### Using another robot model
-
-Add an entry to `ROBOTS` in `launch/gazebo.launch.py`. The model must provide:
-1. a `DiffDrive` plugin on `/cmd_vel`, with the real wheel radius and spacing;
-2. a `PosePublisher` plugin, used for `/gazebo/ground_truth`;
-3. a `JointStatePublisher` for `left_wheel_joint` and `right_wheel_joint` (wheel odometry);
-4. four ultrasonic sensors on `/ultrasonic/<corner>/scan` (`front_left`, `front_right`, `rear_left`, `rear_right`) and a lidar on `/scan`.
-
-Its `params` override the nodes' CAD defaults: `wheel_diameter` and `track_width`
-(`wheel_odometry`), `mts160_x` (`gazebo_mts160`), `lidar_x` and `bumper_x` (`obstacle_stop`),
-and the four sensor mounts `[x, y, z, yaw]` (`ultrasonic_sim`); `lidar` is the lidar's (x, z).
+The robot is described in `../agv_description` (URDF, CAD meshes, mass, casters and sensor frames); see its README.
 
 ## The follower (`agv_control/line_follower`)
 
@@ -247,7 +199,8 @@ and it returns to `IDLE` when the `Explore` goal ends.
 | `/mts160/navicode` | `naviq_msgs/Navicode` | `sim_node` | `gazebo_mts160` |
 | `/ultrasonic/<corner>` | `sensor_msgs/Range` | – | `ultrasonic_sim` |
 | `/gazebo/ground_truth` | `tf2_msgs/TFMessage` | – | Gazebo `PosePublisher` via the bridge |
-| `/odom`, `/tf` | `nav_msgs/Odometry`, `tf2_msgs/TFMessage` | `sim_node` (TF only) | Gazebo `DiffDrive` via the bridge |
+| `/tf` | `tf2_msgs/TFMessage` | `sim_node` (`odom → base_link`), `robot_state_publisher` | `wheel_odometry` (`odom → base_link`), `robot_state_publisher` |
+| `/joint_states` | `sensor_msgs/JointState` | `joint_state_publisher` (zeros) | Gazebo `JointStatePublisher` via the bridge |
 | `/tape_map`, `/sensor_markers` | `visualization_msgs` | `sim_node` | – |
 
 `/mts160/track` uses the sensor's own sign convention: **left is negative and right is positive**, in mm. ROS uses +left, so the follower flips the sign.
@@ -295,11 +248,6 @@ agv_sim/
 ├── launch/
 │   ├── sim.launch.py       RViz simulation
 │   └── gazebo.launch.py   Gazebo station loop, robot spawn, sensors, obstacle stop
-├── models/agv_cad.sdf      CAD robot for Gazebo (default)
-├── models/agv_box.sdf      provisional box robot (robot:=box)
-├── meshes/cad/             CAD meshes for agv_cad.sdf (body reduced by tools/decimate_dae.py)
-├── tools/decimate_dae.py   shrinks a Fusion COLLADA export (run with the project venv)
-├── urdf/, meshes/*.STL     older CAD export (display only, not used by the launches)
 ├── rviz/agv_sim.rviz       RViz configuration
 ├── package.xml
 └── setup.py
@@ -307,8 +255,7 @@ agv_sim/
 
 ## Limits and next steps
 
-- The centre of mass comes from the CAD, whose masses are off by a factor of two. Weighing the drive axle alone would place it.
-- The caster springs and the fork damping are provisional values.
+- The robot model's open points are listed in `../agv_description/README.md`.
 - A Navicode is modelled as one 50 mm square. The real sensor decodes a pattern of several markers.
 - The virtual MTS160 is geometric. It doesn't model magnetic field strength, edge effects or noise.
 - The turn-around counts its angle from message timing, so an obstacle hold during a spin makes it think it has turned further than it did.

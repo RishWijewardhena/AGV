@@ -3,8 +3,10 @@
 import rclpy
 import math
 from rclpy.node import Node
+from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
+from tf2_ros import TransformBroadcaster
 
 from agv_control.odometry import WheelOdometry
 
@@ -17,6 +19,7 @@ class WheelOdometryNode(Node):
         self.declare_parameter('counts_per_rev', 4096)
         self.declare_parameter('left_joint','left_wheel_joint')
         self.declare_parameter('right_joint','right_wheel_joint')
+        self.declare_parameter('publish_tf', True)   # odom -> base_link
 
         p=lambda name: self.get_parameter(name).value
         self.cpr = p('counts_per_rev')
@@ -24,6 +27,7 @@ class WheelOdometryNode(Node):
         self.odom = WheelOdometry(p('wheel_diameter'), p('track_width'), self.cpr)
 
         self.pub =self.create_publisher(Odometry, 'wheel/odom', 10)
+        self.tf = TransformBroadcaster(self) if p('publish_tf') else None
         self.create_subscription(JointState, 'joint_states', self.on_joints, 10)
 
 
@@ -49,6 +53,15 @@ class WheelOdometryNode(Node):
         out.pose.pose.orientation.z = math.sin(self.odom.th / 2)
         out.pose.pose.orientation.w = math.cos(self.odom.th / 2)
         self.pub.publish(out)
+
+        if self.tf:
+            t = TransformStamped()
+            t.header = out.header
+            t.child_frame_id = out.child_frame_id
+            t.transform.translation.x = self.odom.x
+            t.transform.translation.y = self.odom.y
+            t.transform.rotation = out.pose.pose.orientation
+            self.tf.sendTransform(t)
 
 def main():
     rclpy.init()

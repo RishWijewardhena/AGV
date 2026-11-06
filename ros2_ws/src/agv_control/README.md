@@ -6,7 +6,8 @@ dependency on Gazebo, RViz, simulated pose, or `agv_sim`.
 - `line_follower`: tape steering, junction selection, station stop/turn state machine,
   and the `~/explore` action server.
 - `obstacle_stop`: stop-and-wait gate using four `sensor_msgs/Range` topics.
-- `wheel_odometry`: `/wheel/odom` from the drive-wheel joint angles (`odometry.py`).
+- `wheel_odometry`: `/wheel/odom` and the `odom → base_link` transform from the drive-wheel
+  joint angles (`odometry.py`); wheel size and spacing come from `agv_description`.
 - `tape_recorder`: logs junction, station and turn events with wheel odometry
   (`trip.py`); `~/save_trip` (`std_srvs/Trigger`) writes the trip JSON.
 - `build_map` (`map_builder.py`): turns one or more trips into a junction graph.

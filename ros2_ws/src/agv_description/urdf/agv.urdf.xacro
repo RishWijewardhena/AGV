@@ -1,0 +1,149 @@
+<?xml version="1.0"?>
+<!-- AGV_Design_4 from Fusion (/home/rishmika/Documents/URDF4), for RViz, robot_state_publisher and
+     Gazebo. base_link is on the floor under the drive axle, +x forward, +y left. The CAD's own base_link
+     (axle centre) is 0.073 m above it. Dimensions come from config/geometry.yaml. body.dae is the CAD
+     body reduced by tools/decimate_dae.py (lidar and actuators exact, the rest within 2 mm).
+     Mass: 30 kg as weighed (Fusion's materials give 60 kg). The body is 30 kg less the wheels and
+     casters, with the CAD centre of mass and its inertia scaled to that mass.
+     sim:=true adds the Gazebo sensors, plugins and contact settings (agv.gazebo.xacro). -->
+<robot name="agv" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="sim" default="false"/>
+  <xacro:property name="g" value="${xacro.load_yaml('$(find agv_description)/config/geometry.yaml')}"/>
+  <xacro:property name="mesh" value="package://agv_description/meshes"/>
+  <xacro:property name="r" value="${g['wheel_radius']}"/>
+
+  <link name="base_link"/>
+
+  <!-- The body carries the mass on its own link: KDL cannot use an inertia on the root link. -->
+  <link name="body_link">
+    <inertial>
+      <origin xyz="-0.0127 0.0002 0.1374"/>
+      <mass value="23.9"/>
+      <inertia ixx="0.5026" ixy="0.0027" ixz="0.0049" iyy="1.2519" iyz="-0.0009" izz="1.5279"/>
+    </inertial>
+    <collision>
+      <origin xyz="0 0 0.18"/>
+      <geometry><box size="0.70 0.46 0.29"/></geometry>
+    </collision>
+    <visual>
+      <origin xyz="0 0 0.073" rpy="1.5708 0 -1.5708"/>
+      <geometry><mesh filename="${mesh}/body.dae"/></geometry>
+    </visual>
+    <!-- The linear rails are drawn fixed; in the CAD they slide. -->
+    <visual>
+      <origin xyz="-0.1630 -0.1350 0.0900" rpy="1.5708 0 1.5708"/>
+      <geometry><mesh filename="${mesh}/rail_Component2_2.dae"/></geometry>
+    </visual>
+    <visual>
+      <origin xyz="-0.1630 0.1350 0.0900" rpy="1.5708 0 1.5708"/>
+      <geometry><mesh filename="${mesh}/rail_Component2.dae"/></geometry>
+    </visual>
+  </link>
+  <joint name="body_joint" type="fixed">
+    <parent link="base_link"/><child link="body_link"/>
+  </joint>
+
+  <!-- Drive wheels: 1.95 kg hub motors (datasheet). Both axes +y so forward is positive
+       (the CAD URDF has the left axis reversed). -->
+  <xacro:macro name="drive_wheel" params="side y visual_y visual_yaw">
+    <link name="${side}_wheel">
+      <inertial>
+        <mass value="1.95"/>
+        <inertia ixx="0.002193" ixy="0" ixz="0" iyy="0.003415" iyz="0" izz="0.002193"/>
+      </inertial>
+      <collision><geometry><sphere radius="${r}"/></geometry></collision>
+      <visual>
+        <origin xyz="0 ${visual_y} 0" rpy="-3.1416 0 ${visual_yaw}"/>
+        <geometry><mesh filename="${mesh}/wheel_${side}.dae"/></geometry>
+      </visual>
+    </link>
+    <joint name="${side}_wheel_joint" type="continuous">
+      <parent link="base_link"/><child link="${side}_wheel"/>
+      <origin xyz="0 ${y} ${r}"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+  <xacro:drive_wheel side="left" y="${g['wheel_separation'] / 2}" visual_y="0.0428" visual_yaw="0"/>
+  <xacro:drive_wheel side="right" y="${-g['wheel_separation'] / 2}" visual_y="-0.0428" visual_yaw="-3.1416"/>
+
+  <!-- Casters: 2-inch swivel casters at the CAD positions. The mount (stem and top plate) rides on a
+       vertical spring, the fork swivels freely about the stem axis (s), and the wheel (w) trails
+       behind it, so sideways friction turns the fork to follow the travel direction. Wheel centres
+       are raised 2 mm from the CAD to the drive-wheel floor. Visual origins are the CAD's, per part. -->
+  <xacro:macro name="caster" params="name sx sy sz wx wy n stud_xyz stud_rpy base_xyz fork_xyz wheel_xyz wheel_rpy">
+    <link name="${name}_caster_mount">
+      <inertial><mass value="0.09"/><inertia ixx="0.00005" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00005"/></inertial>
+      <visual>
+        <origin xyz="${stud_xyz}" rpy="${stud_rpy}"/>
+        <geometry><mesh filename="${mesh}/caster_M12_STUD_BOLT${n}.dae"/></geometry>
+      </visual>
+      <visual>
+        <origin xyz="${base_xyz}" rpy="1.5708 0 1.5708"/>
+        <geometry><mesh filename="${mesh}/caster_2_inch_WHEEL_UPPER_BASE_2${n}.dae"/></geometry>
+      </visual>
+    </link>
+    <joint name="${name}_caster_spring" type="prismatic">
+      <parent link="base_link"/><child link="${name}_caster_mount"/>
+      <origin xyz="${sx} ${sy} ${sz}"/>
+      <axis xyz="0 0 1"/>
+      <limit lower="-0.005" upper="0.005" effort="1000" velocity="1"/>
+      <dynamics damping="20"/>
+    </joint>
+    <link name="${name}_caster_swivel">
+      <inertial><mass value="0.09"/><inertia ixx="0.00005" ixy="0" ixz="0" iyy="0.00005" iyz="0" izz="0.00005"/></inertial>
+      <visual>
+        <origin xyz="${fork_xyz}" rpy="1.5708 0 1.5708"/>
+        <geometry><mesh filename="${mesh}/caster_2_inch_WHEEL_BASE_SWIVEL_without_BRAKES${n}.dae"/></geometry>
+      </visual>
+    </link>
+    <joint name="${name}_caster_swivel_joint" type="continuous">
+      <parent link="${name}_caster_mount"/><child link="${name}_caster_swivel"/>
+      <axis xyz="0 0 1"/>
+      <dynamics damping="0.01"/>
+    </joint>
+    <link name="${name}_caster_wheel">
+      <inertial><mass value="0.37"/><inertia ixx="0.000072" ixy="0" ixz="0" iyy="0.000119" iyz="0" izz="0.000072"/></inertial>
+      <collision><geometry><sphere radius="0.0254"/></geometry></collision>
+      <visual>
+        <origin xyz="${wheel_xyz}" rpy="${wheel_rpy}"/>
+        <geometry><mesh filename="${mesh}/caster_2_inch_WHEEL${n}.dae"/></geometry>
+      </visual>
+    </link>
+    <joint name="${name}_caster_wheel_joint" type="continuous">
+      <parent link="${name}_caster_swivel"/><child link="${name}_caster_wheel"/>
+      <origin xyz="${wx - sx} ${wy - sy} ${0.0254 - sz}"/>
+      <axis xyz="0 1 0"/>
+    </joint>
+  </xacro:macro>
+  <xacro:caster name="front_left" sx="0.2950" sy="0.1750" sz="0.0770" wx="0.2721" wy="0.1754" n=""
+                stud_xyz="0.0001 0.0004 -0.0052" stud_rpy="-1.5708 0 1.5708" base_xyz="0.0001 0.0004 -0.0052"
+                fork_xyz="0.0001 0.0004 -0.0167" wheel_xyz="0 0 -0.0020" wheel_rpy="1.5708 0 1.5708"/>
+  <xacro:caster name="front_right" sx="0.2950" sy="-0.1750" sz="0.0720" wx="0.2719" wy="-0.1746" n="_2"
+                stud_xyz="-0.0001 0.0004 0.0052" stud_rpy="1.5708 0 1.5708" base_xyz="-0.0001 0.0004 0"
+                fork_xyz="-0.0001 0.0004 -0.0115" wheel_xyz="0 0 -0.0019" wheel_rpy="0 0 1.5708"/>
+  <xacro:caster name="rear_left" sx="-0.2950" sy="0.1750" sz="0.0770" wx="-0.3186" wy="0.1752" n="_3"
+                stud_xyz="0.0001 0.0004 -0.0052" stud_rpy="-1.5708 0 1.5708" base_xyz="-0.0006 0.0002 -0.0052"
+                fork_xyz="-0.0006 0.0002 -0.0167" wheel_xyz="0 0 -0.0020" wheel_rpy="0 0 1.5708"/>
+  <xacro:caster name="rear_right" sx="-0.2950" sy="-0.1750" sz="0.0770" wx="-0.3179" wy="-0.1746" n="_4"
+                stud_xyz="0.0001 0.0004 -0.0052" stud_rpy="-1.5708 0 1.5708" base_xyz="0.0001 0.0004 -0.0052"
+                fork_xyz="0.0001 0.0004 -0.0167" wheel_xyz="0 0 -0.0020" wheel_rpy="0 0 1.5708"/>
+
+  <!-- Sensor frames, fixed to base_link. The MTS160 and the lidar are drawn in body.dae. -->
+  <xacro:macro name="sensor_frame" params="name pose">
+    <link name="${name}"/>
+    <joint name="${name}_joint" type="fixed">
+      <parent link="base_link"/><child link="${name}"/>
+      <origin xyz="${pose[0]} ${pose[1]} ${pose[2]}" rpy="0 0 ${pose[3]}"/>
+    </joint>
+  </xacro:macro>
+  <xacro:sensor_frame name="mts160_link" pose="${g['mts160']}"/>
+  <xacro:sensor_frame name="lidar_link" pose="${g['lidar']}"/>
+  <xacro:sensor_frame name="ultrasonic_front_left_link" pose="${g['ultrasonic']['front_left']}"/>
+  <xacro:sensor_frame name="ultrasonic_front_right_link" pose="${g['ultrasonic']['front_right']}"/>
+  <xacro:sensor_frame name="ultrasonic_rear_left_link" pose="${g['ultrasonic']['rear_left']}"/>
+  <xacro:sensor_frame name="ultrasonic_rear_right_link" pose="${g['ultrasonic']['rear_right']}"/>
+
+  <xacro:if value="$(arg sim)">
+    <xacro:include filename="$(find agv_description)/urdf/agv.gazebo.xacro"/>
+  </xacro:if>
+</robot>

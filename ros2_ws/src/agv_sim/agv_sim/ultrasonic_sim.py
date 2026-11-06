@@ -4,18 +4,11 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 
-from geometry_msgs.msg import TransformStamped
 from sensor_msgs.msg import LaserScan, Range
-from tf2_ros import StaticTransformBroadcaster
 
 
-# Default (x, y, z, yaw) of each sensor origin in base_link: the CAD model (models/agv_cad.sdf).
-MOUNTS = {
-    'front_left':  (0.38,  0.18, 0.105, 0.0),
-    'front_right': (0.38, -0.18, 0.105, 0.0),
-    'rear_left':   (-0.38,  0.18, 0.105, math.pi),
-    'rear_right':  (-0.38, -0.18, 0.105, math.pi),
-}
+# Sensor corners; their frames ultrasonic_<corner>_link come from the robot description.
+CORNERS = ('front_left', 'front_right', 'rear_left', 'rear_right')
 
 
 def nearest_distance(scan):
@@ -43,12 +36,8 @@ class UltrasonicSim(Node):
 
         self.publishers_by_name = {}
         self.subscriptions_by_name = {}
-        self.static_tf = StaticTransformBroadcaster(self)
 
-        transforms = []
-
-        for name, mount in MOUNTS.items():
-            x, y, z, yaw = self.declare_parameter(name, list(mount)).value
+        for name in CORNERS:
             self.publishers_by_name[name] = self.create_publisher(
                 Range,
                 f'/ultrasonic/{name}',
@@ -61,22 +50,6 @@ class UltrasonicSim(Node):
                 lambda message, sensor=name: self.on_scan(message, sensor),
                 qos_profile_sensor_data,
             )
-
-            transform = TransformStamped()
-            transform.header.stamp = self.get_clock().now().to_msg()
-            transform.header.frame_id = 'base_link'
-            transform.child_frame_id = f'ultrasonic_{name}_link'
-
-            transform.transform.translation.x = x
-            transform.transform.translation.y = y
-            transform.transform.translation.z = z
-
-            transform.transform.rotation.z = math.sin(yaw / 2)
-            transform.transform.rotation.w = math.cos(yaw / 2)
-
-            transforms.append(transform)
-
-        self.static_tf.sendTransform(transforms)
 
     def on_scan(self, scan, name):
         message = Range()
