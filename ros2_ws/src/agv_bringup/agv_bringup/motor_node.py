@@ -28,7 +28,7 @@ class MotorNode(Node):
     def __init__(self, *, controller_factory=None, **kwargs):
         super().__init__('motor_node', **kwargs)
         defaults = dict(enable_motors=False, port='/dev/zlac', node_id=1,
-                        wheel_radius=0.0655, wheel_separation=0.0,
+                        wheel_radius=0.0, wheel_separation=0.0,
                         left_direction=0, right_direction=0,
                         max_rpm=10.0, command_timeout=0.3)
         self.config = {name: self.declare_parameter(

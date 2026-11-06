@@ -20,4 +20,6 @@ def node_params(geometry):
                            'track_width': geometry['wheel_separation']},
         'gazebo_mts160': {'mts160_x': geometry['mts160'][0]},
         'obstacle_stop': {'lidar_x': geometry['lidar'][0], 'bumper_x': geometry['bumper_x']},
+        'motor_node': {'wheel_radius': geometry['wheel_radius'],
+                       'wheel_separation': geometry['wheel_separation']},
     }

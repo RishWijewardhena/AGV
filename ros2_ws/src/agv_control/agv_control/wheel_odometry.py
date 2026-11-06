@@ -3,6 +3,7 @@
 import rclpy
 import math
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import JointState
@@ -14,8 +15,8 @@ class WheelOdometryNode(Node):
 
     def __init__(self):
         super().__init__('wheel_odometry_node')
-        self.declare_parameter('wheel_diameter', 0.131)  # datasheet and measured
-        self.declare_parameter('track_width', 0.3744)
+        self.declare_parameter('wheel_diameter', Parameter.Type.DOUBLE)  # from agv_description geometry
+        self.declare_parameter('track_width', Parameter.Type.DOUBLE)
         self.declare_parameter('counts_per_rev', 4096)
         self.declare_parameter('left_joint','left_wheel_joint')
         self.declare_parameter('right_joint','right_wheel_joint')

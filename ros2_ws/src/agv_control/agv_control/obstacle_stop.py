@@ -3,6 +3,7 @@
 import math
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from rclpy.qos import qos_profile_sensor_data
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Range
@@ -92,8 +93,8 @@ class ObstacleStop(Node):
         self.command_time = None
         self.previous_blocked = None
 
-        self.declare_parameter('lidar_x', 0.312)    # lidar ahead of base_link (CAD AGV_Design_4)
-        self.declare_parameter('bumper_x', 0.375)   # base_link to the front face
+        self.declare_parameter('lidar_x', Parameter.Type.DOUBLE)   # from agv_description geometry
+        self.declare_parameter('bumper_x', Parameter.Type.DOUBLE)
         self.declare_parameter('half_width', 0.28)  # half the body width (0.23 m) plus a margin
         self.lidar_x, self.bumper_x, self.half_width = (
             self.get_parameter(name).value for name in ('lidar_x', 'bumper_x', 'half_width'))

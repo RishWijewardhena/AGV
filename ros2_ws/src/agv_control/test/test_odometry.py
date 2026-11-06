@@ -5,10 +5,12 @@ import unittest
 
 from agv_control.odometry import WheelOdometry, count_delta
 
+ROBOT = (0.131, 0.40, 4096)   # wheel diameter, track width, counts per rev used by the expected poses
+
 
 def driven(*readings):
     """Odometry after the first reading (0, 0) and then each (left, right)."""
-    odom = WheelOdometry()
+    odom = WheelOdometry(*ROBOT)
     odom.update(0, 0)
     for left, right in readings:
         odom.update(left, right)
@@ -44,7 +46,7 @@ class OdometryTests(unittest.TestCase):
         self.assertAlmostEqual(odom.th, 1.02887, places=4)
 
     def test_first_reading_does_not_move(self):
-        odom = WheelOdometry()
+        odom = WheelOdometry(*ROBOT)
         odom.update(123456, -98765)
         self.assertEqual((odom.x, odom.y, odom.th, odom.distance), (0.0, 0.0, 0.0, 0.0))
 

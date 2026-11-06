@@ -11,7 +11,7 @@ def count_delta(new, old):
 class WheelOdometry:
     """Track the robot pose from the driver's absolute left and right counts."""
 
-    def __init__(self, wheel_diameter=0.131, track_width=0.40, counts_per_rev=4096):
+    def __init__(self, wheel_diameter, track_width, counts_per_rev):
         self.metres_per_count = math.pi * wheel_diameter / counts_per_rev
         self.track_width = track_width
         self.x = self.y = self.th = 0.0

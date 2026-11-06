@@ -7,9 +7,12 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+from agv_description.geometry import load, node_params
+
 
 def generate_launch_description():
     config = PathJoinSubstitution([FindPackageShare('agv_bringup'), 'config', 'robot.yaml'])
+    geometry = node_params(load())
     return LaunchDescription([
         DeclareLaunchArgument('enable_motors', default_value='false',
                               description='Open the motor port; requires commissioned robot.yaml'),
@@ -21,9 +24,9 @@ def generate_launch_description():
                     'MTS160 drivers are not launched here yet.'),
         Node(package='agv_bringup', executable='motor_node', output='screen',
              condition=IfCondition(LaunchConfiguration('enable_motors')),
-             parameters=[config, {'enable_motors': True}]),
+             parameters=[config, geometry['motor_node'], {'enable_motors': True}]),
         Node(package='agv_control', executable='obstacle_stop', output='screen',
-             parameters=[config]),
+             parameters=[config, geometry['obstacle_stop']]),
         Node(package='agv_control', executable='line_follower', output='screen',
              condition=IfCondition(LaunchConfiguration('enable_follower')),
              parameters=[config], remappings=[('cmd_vel', '/cmd_vel_raw')],
