@@ -4,7 +4,9 @@ Shared ROS 2 behaviour for both simulation and the real AGV. This package has no
 dependency on Gazebo, RViz, simulated pose, or `agv_sim`.
 
 - `line_follower`: tape steering, junction selection, station stop/turn state machine,
-  and the `~/explore` action server.
+  and the `~/explore` action server. A turn-around ends when the tape is centred under the
+  MTS160 after at least 150° of turn, measured from the `/wheel/odom` heading (the gyro when
+  there is one). Past `max_turn` (220°) without tape it stops.
 - `obstacle_stop`: stop-and-wait gate using four `sensor_msgs/Range` topics.
 - `wheel_odometry`: `/wheel/odom` and the `odom → base_link` transform from the drive-wheel
   joint angles (`odometry.py`); wheel size and spacing come from `agv_description`. With
@@ -90,12 +92,12 @@ taught map instead.
 
 ## Deployment status
 
-The folder separation is not hardware commissioning. The follower still estimates
-spin angle from commanded speed and fixed message periods, and its track
+The folder separation is not hardware commissioning. The follower measures turns
+from `/wheel/odom`, so `wheel_odometry` must run on the robot. Its track
 subscription must be made compatible with the vendor driver's best-effort QoS
 before connecting that driver. An ICM-20948 driver publishing `sensor_msgs/Imu`,
-gyro scale calibration, odometry-based turns, calibrated sensor placement, motor
-limits/watchdogs, and hardware validation remain separate work.
+gyro scale calibration, calibrated sensor placement, motor limits/watchdogs, and
+hardware validation remain separate work.
 
 Build from `ros2_ws`, never from this package directory. The build target
 `--packages-up-to agv_control` brings in `naviq_msgs` and `agv_interfaces` without

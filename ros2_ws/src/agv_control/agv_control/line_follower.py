@@ -38,6 +38,7 @@ class Follower(Node):
         self.declare_parameter('stops', [2, 4])   # Navicode values to stop at, in order
         self.declare_parameter('dwell', 3.0)      # seconds to wait at a stop
         self.declare_parameter('spin_speed', 0.6) # rad/s while turning around
+        self.declare_parameter('max_turn', 220.0) # deg: stop if the tape is not found by then
         self.state = 'FOLLOW'
         self.stop_i = 0                           # which entry of 'stops' is next
         self.stop_code = None                     # Navicode of the tag we last stopped at
@@ -52,7 +53,6 @@ class Follower(Node):
         self.explore_side = 'R'                   # side picked at the junction being entered
         if self.get_parameter('explore').value:
             self.state = 'IDLE'
-            self.create_subscription(Odometry, 'wheel/odom', self.on_odom, 10)
             self.explore_server = ActionServer(
                 self, Explore, '~/explore', self.on_explore, goal_callback=self.on_explore_goal,
                 cancel_callback=lambda goal: CancelResponse.ACCEPT)
@@ -76,6 +76,8 @@ class Follower(Node):
 
         self.state_start = self.get_clock().now()
         self.turned = 0.0                         # radians turned in the current spin
+        self.heading = None                       # odometry yaw: from the gyro when the robot has one
+        self.create_subscription(Odometry, 'wheel/odom', self.on_odom, 10)
         self.create_subscription(Navicode, 'mts160/navicode', self.on_navicode, 10)
 
 
@@ -88,9 +90,14 @@ class Follower(Node):
             self.explorer.trip.record(parse_event(text))
 
     def on_odom(self, msg):
+        p = msg.pose.pose
+        heading = yaw(p.orientation)
+        if self.state == 'SPIN' and self.heading is not None:
+            step = heading - self.heading
+            self.turned += abs(math.atan2(math.sin(step), math.cos(step)))
+        self.heading = heading
         if self.explorer is not None:
-            p = msg.pose.pose
-            self.explorer.trip.move(p.position.x, p.position.y, yaw(p.orientation))
+            self.explorer.trip.move(p.position.x, p.position.y, heading)
 
     def on_explore_goal(self, request):
         if self.goal is not None or not request.map_file:
@@ -168,12 +175,16 @@ class Follower(Node):
                 self.announce('turn')
 
         elif self.state == 'SPIN':
-            spin = self.get_parameter('spin_speed').value
-            cmd.angular.z = spin
-            self.turned += spin * 0.01                 # track messages arrive every 10 ms
+            cmd.angular.z = self.get_parameter('spin_speed').value
             centred = (msg.tape_detected and abs(msg.left.position_mm) < 10
                        and abs(msg.left.angle_deg) < 10)
-            if self.turned >= math.radians(150) and centred:
+            if self.turned > math.radians(self.get_parameter('max_turn').value):
+                cmd.angular.z = 0.0                    # the tape decides; past the limit, give up
+                self.state = 'DONE'
+                self.get_logger().error('no tape after turning around, stopping')
+                if self.explorer is not None:
+                    self.finish_explore(False, 'no tape after turning around')
+            elif self.turned >= math.radians(150) and centred:
                 cmd.angular.z = 0.0
                 self.reset_junctions()
                 if self.explorer is not None:

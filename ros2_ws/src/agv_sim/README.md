@@ -260,6 +260,5 @@ agv_sim/
 - The robot model's open points are listed in `../agv_description/README.md`.
 - A Navicode is modelled as one 50 mm square. The real sensor decodes a pattern of several markers.
 - The virtual MTS160 is geometric. It doesn't model magnetic field strength, edge effects or noise.
-- The turn-around counts its angle from message timing, so an obstacle hold during a spin makes it think it has turned further than it did.
 - Exploration does not finish if a junction is classified `unknown` or odometry drift splits one junction into two (> 0.3 m apart); neither happens in Gazebo.
 - The lidar and docking with the trolley still need work.
