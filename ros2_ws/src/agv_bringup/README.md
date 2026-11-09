@@ -10,7 +10,11 @@ This package does not depend on Gazebo or RViz.
   `test/ZLAC8015D_python/zlac8015d/ZLAC8015D.py`; the bench-test source is unchanged.
 - `agv_bringup/motor_node.py`: receives `/cmd_vel` (`geometry_msgs/Twist`), converts
   linear.x/angular.z to direct-drive wheel RPM and calls the existing Controller.
-- `config/robot.yaml`: serial port, wheel dimensions, motor directions and limits.
+- `config/robot.yaml`: serial port, motor directions and limits. Wheel radius and spacing
+  come from `agv_description/config/geometry.yaml`.
+- `launch/robot.launch.py` also starts `robot_state_publisher` with the `agv_description`
+  URDF, so RViz on a laptop in the same ROS domain shows the robot and its sensor frames.
+  The wheels appear once `motor_node` publishes `/joint_states` (not done yet).
 
 The copied library retains the original functions. Local changes are PyModbus
 3.6.x compatibility (`slave=`), bounded reads, checked write errors, detection of
@@ -48,9 +52,10 @@ versions. Offline tests inject a fake client and need no PyModbus installation.
 
 1. Lift and secure the drive wheels and have an independent hardware emergency
    stop available. This ROS node is not a safety-rated stop.
-2. Set a stable motor port, measured drive-wheel centre spacing (metres), and
-   verified left/right directions (+1/-1) in `config/robot.yaml`. Zero placeholders
-   intentionally prevent the port from opening. Do not reuse Gazebo's provisional spacing.
+2. Set a stable motor port and verified left/right directions (+1/-1) in
+   `config/robot.yaml`; zero placeholders intentionally prevent the port from opening.
+   Measure the drive-wheel centre spacing and correct `wheel_separation` in
+   `agv_description/config/geometry.yaml` if it differs from 0.3744 m.
 3. Keep the initial `max_rpm: 10.0` limit. The 131 mm wheels are assumed direct-drive.
 4. Close bench scripts: this node must be the only owner of the motor port. Do
    not run Gazebo command publishers in the real robot's ROS domain.

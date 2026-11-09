@@ -8,6 +8,7 @@ import math
 
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from tf2_msgs.msg import TFMessage
 from naviq_msgs.msg import TrackDetection, Navicode
 
@@ -18,7 +19,7 @@ class GazeboMTS160(Node):
     def __init__(self):
         super().__init__('gazebo_mts160')
         self.declare_parameter('model_name', 'agv')
-        self.declare_parameter('mts160_x', 0.30)        # m ahead of the drive axle (CAD housing centre)
+        self.declare_parameter('mts160_x', Parameter.Type.DOUBLE)   # from agv_description geometry
         self.model_name = self.get_parameter('model_name').value
         self.sensor_x = self.get_parameter('mts160_x').value
 

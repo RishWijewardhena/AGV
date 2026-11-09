@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist , TransformStamped
 from tf2_ros import TransformBroadcaster
+from nav_msgs.msg import Odometry
 from visualization_msgs.msg import Marker,MarkerArray
 from geometry_msgs.msg import Point
 from rclpy.qos import QoSProfile,DurabilityPolicy
@@ -29,6 +30,7 @@ class Sim(Node):
 		self.publish_tape_map()
 		self.create_subscription(Twist,'cmd_vel', self.on_cmd,10)
 		self.tf = TransformBroadcaster(self)
+		self.odom_pub = self.create_publisher(Odometry, 'wheel/odom', 10)   # exact pose, like perfect odometry
 		self.create_timer(self.dt,self.step)
 		self.A, self.B = to_segments(self.tape_map)
 		self.sensor_x = 0.25                                  # m ahead of the axle
@@ -114,6 +116,13 @@ class Sim(Node):
 		t.transform.rotation.z=math.sin(self.th/2)
 		t.transform.rotation.w=math.cos(self.th/2)
 		self.tf.sendTransform(t)
+		odom = Odometry()
+		odom.header = t.header
+		odom.child_frame_id = t.child_frame_id
+		odom.pose.pose.position.x = self.x
+		odom.pose.pose.position.y = self.y
+		odom.pose.pose.orientation = t.transform.rotation
+		self.odom_pub.publish(odom)
 		self.read_sensor()
 
 	def read_sensor(self):

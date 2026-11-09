@@ -7,7 +7,7 @@ within one cell of the CAD and no spikes appear; parts keep their materials. Eve
 outside <library_geometries> is copied unchanged. The file is read through mmap because
 the source can be hundreds of MB.
 
-    venv/bin/python ros2_ws/src/agv_sim/tools/decimate_dae.py base_link.dae body.dae --cell 0.002 \
+    venv/bin/python ros2_ws/src/agv_description/tools/decimate_dae.py base_link.dae body.dae --cell 0.002 \
         --keep 'igs|Actuator|actuator'
 """
 

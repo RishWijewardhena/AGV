@@ -1,0 +1,18 @@
+# AGV_Design_4 geometry: the one place these values are set. urdf/agv.urdf.xacro builds the
+# robot from them, and the launch files pass them to the nodes that need them.
+# Frame: base_link is on the floor under the drive axle, +x forward, +y left (metres, radians).
+
+wheel_radius: 0.0655        # 131 mm hub motors (datasheet, measured)
+wheel_separation: 0.3744    # drive-wheel centres (CAD, confirmed)
+
+# Sensor frames [x, y, z, yaw]
+mts160: [0.30, 0.0, 0.038, 0.0]       # housing centre in the CAD, sensing face 38 mm up
+lidar: [0.312, 0.0, 0.317, 0.0]       # RPLidar A1M8 laser plane
+ultrasonic:                           # URM09 fan origins, 6 mm outside the CAD sensor faces
+  front_left: [0.38, 0.18, 0.105, 0.0]
+  front_right: [0.38, -0.18, 0.105, 0.0]
+  rear_left: [-0.38, 0.18, 0.105, 3.14159]
+  rear_right: [-0.38, -0.18, 0.105, 3.14159]
+imu: [0.0, 0.0, 0.10, 0.0]            # ICM-20948, provisional: not in the CAD yet; near the axle centre
+
+bumper_x: 0.375             # base_link to the front face of the body

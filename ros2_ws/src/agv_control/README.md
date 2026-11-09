@@ -4,9 +4,16 @@ Shared ROS 2 behaviour for both simulation and the real AGV. This package has no
 dependency on Gazebo, RViz, simulated pose, or `agv_sim`.
 
 - `line_follower`: tape steering, junction selection, station stop/turn state machine,
-  and the `~/explore` action server.
+  and the `~/explore` action server. A turn-around ends when the tape is centred under the
+  MTS160 after at least 150° of turn, measured from the `/wheel/odom` heading (the gyro when
+  there is one). Past `max_turn` (220°) without tape it stops.
 - `obstacle_stop`: stop-and-wait gate using four `sensor_msgs/Range` topics.
-- `wheel_odometry`: `/wheel/odom` from the drive-wheel joint angles (`odometry.py`).
+- `wheel_odometry`: `/wheel/odom` and the `odom → base_link` transform from the drive-wheel
+  joint angles (`odometry.py`); wheel size and spacing come from `agv_description`. With
+  `imu_topic` set, the heading comes from the gyro and the wheels give only the distance.
+  The gyro bias is learnt whenever the wheels stand still (0.1 s without an encoder count),
+  and the heading holds still then; until 1 s of still samples is in, the wheels give the
+  heading. Trips and explored maps therefore use the gyro's heading.
 - `tape_recorder`: logs junction, station and turn events with wheel odometry
   (`trip.py`); `~/save_trip` (`std_srvs/Trigger`) writes the trip JSON.
 - `build_map` (`map_builder.py`): turns one or more trips into a junction graph.
@@ -85,11 +92,12 @@ taught map instead.
 
 ## Deployment status
 
-The folder separation is not hardware commissioning. The follower still estimates
-spin angle from commanded speed and fixed message periods, and its track
+The folder separation is not hardware commissioning. The follower measures turns
+from `/wheel/odom`, so `wheel_odometry` must run on the robot. Its track
 subscription must be made compatible with the vendor driver's best-effort QoS
-before connecting that driver. Odometry-based turns, calibrated sensor placement,
-motor limits/watchdogs, and hardware validation remain separate work.
+before connecting that driver. An ICM-20948 driver publishing `sensor_msgs/Imu`,
+gyro scale calibration, calibrated sensor placement, motor limits/watchdogs, and
+hardware validation remain separate work.
 
 Build from `ros2_ws`, never from this package directory. The build target
 `--packages-up-to agv_control` brings in `naviq_msgs` and `agv_interfaces` without
