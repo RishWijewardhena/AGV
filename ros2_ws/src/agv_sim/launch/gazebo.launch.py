@@ -29,6 +29,7 @@ def robot_nodes():
     xacro_file = PathJoinSubstitution([FindPackageShare('agv_description'), 'urdf', 'agv.urdf.xacro'])
     description = ParameterValue(Command(['xacro "', xacro_file, '" sim:=true']), value_type=str)
     geometry = node_params(load())
+    geometry['wheel_odometry']['imu_topic'] = '/imu'     # heading from the simulated ICM-20948
     x, y, yaw = START_POSE
 
     def params(name):
@@ -100,6 +101,7 @@ def generate_launch_description():
                  '/ultrasonic/rear_left/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                  '/ultrasonic/rear_right/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
                  '/scan@sensor_msgs/msg/LaserScan[gz.msgs.LaserScan',
+                 '/imu@sensor_msgs/msg/Imu[gz.msgs.IMU',
                  '/joint_states@sensor_msgs/msg/JointState[gz.msgs.Model',
 
              ],

@@ -4,12 +4,13 @@ import rclpy
 import math
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+from rclpy.qos import qos_profile_sensor_data
 from geometry_msgs.msg import TransformStamped
 from nav_msgs.msg import Odometry
-from sensor_msgs.msg import JointState
+from sensor_msgs.msg import Imu, JointState
 from tf2_ros import TransformBroadcaster
 
-from agv_control.odometry import WheelOdometry
+from agv_control.odometry import GyroYaw, WheelOdometry
 
 class WheelOdometryNode(Node):
 
@@ -21,6 +22,7 @@ class WheelOdometryNode(Node):
         self.declare_parameter('left_joint','left_wheel_joint')
         self.declare_parameter('right_joint','right_wheel_joint')
         self.declare_parameter('publish_tf', True)   # odom -> base_link
+        self.declare_parameter('imu_topic', '')      # gyro for the heading; empty = wheels only
 
         p=lambda name: self.get_parameter(name).value
         self.cpr = p('counts_per_rev')
@@ -30,6 +32,17 @@ class WheelOdometryNode(Node):
         self.pub =self.create_publisher(Odometry, 'wheel/odom', 10)
         self.tf = TransformBroadcaster(self) if p('publish_tf') else None
         self.create_subscription(JointState, 'joint_states', self.on_joints, 10)
+
+        self.gyro = None
+        self.counts = None           # previous wheel counts
+        self.unmoved = 0             # wheel updates in a row without a count change
+        if p('imu_topic'):
+            self.gyro = GyroYaw()
+            self.create_subscription(Imu, p('imu_topic'), self.on_imu, qos_profile_sensor_data)
+
+    def on_imu(self, msg):
+        stamp = msg.header.stamp
+        self.gyro.add(msg.angular_velocity.z, stamp.sec + stamp.nanosec * 1e-9)
 
 
     def to_counts(self, angle):
@@ -43,7 +56,15 @@ class WheelOdometryNode(Node):
         except (ValueError, IndexError):
             return                    # this message doesn't carry both wheels
 
-        self.odom.update(self.to_counts(left), self.to_counts(right))
+        counts = (self.to_counts(left), self.to_counts(right))
+        dth = None
+        if self.gyro:
+            self.unmoved = self.unmoved + 1 if counts == self.counts else 0
+            turned = self.gyro.take(still=self.unmoved >= 5)   # 0.1 s without a count at 50 Hz
+            if self.gyro.ready:
+                dth = turned
+        self.counts = counts
+        self.odom.update(*counts, dth)
 
         out = Odometry()
         out.header.stamp = msg.header.stamp

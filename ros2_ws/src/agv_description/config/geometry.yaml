@@ -13,5 +13,6 @@ ultrasonic:                           # URM09 fan origins, 6 mm outside the CAD 
   front_right: [0.38, -0.18, 0.105, 0.0]
   rear_left: [-0.38, 0.18, 0.105, 3.14159]
   rear_right: [-0.38, -0.18, 0.105, 3.14159]
+imu: [0.0, 0.0, 0.10, 0.0]            # ICM-20948, provisional: not in the CAD yet; near the axle centre
 
 bumper_x: 0.375             # base_link to the front face of the body

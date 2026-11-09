@@ -98,7 +98,7 @@ line_follower ─▶ /cmd_vel_raw ─▶ obstacle_stop ─▶ /cmd_vel ─▶ Ga
 
 Gazebo true pose ─▶ /gazebo/ground_truth ─▶ gazebo_mts160 ─▶ /mts160/track, /mts160/navicode
 
-/joint_states ─▶ wheel_odometry ─▶ /wheel/odom ─▶ tape_recorder ◀─ /junction_events (follower)
+/joint_states, /imu ─▶ wheel_odometry ─▶ /wheel/odom ─▶ tape_recorder ◀─ /junction_events (follower)
 ```
 
 ### Mapping the layout
@@ -142,6 +142,7 @@ spurs. Keep `SPURS` in counter-clockwise order. When adding a station, also:
 
 - **World:** at every launch, `world_builder.py` writes `/tmp/agv_station_loop.sdf` from `tape_map.py`. The Gazebo track is therefore always identical to the RViz one. Tape (25 × 1.3 mm) and Navicode markers are visual only, so the wheels never bump over tape edges.
 - **Robot:** `robot_state_publisher` publishes the `agv_description` URDF (`sim:=true`), and `ros_gz_sim create` spawns it at START from `/robot_description`. The nodes below get their geometry from `agv_description/config/geometry.yaml`. Add `headless:=true` to run without the Gazebo window.
+- **IMU:** a simulated ICM-20948 on `/imu` (100 Hz, datasheet noise and bias) gives `wheel_odometry` its heading.
 - **TF:** `wheel_odometry` publishes `odom → base_link`, as on the real robot; `robot_state_publisher` publishes the wheels, casters and sensor frames from `/joint_states`. `DiffDrive`'s own odometry stays inside Gazebo.
 - **Virtual MTS160** (`gazebo_mts160`): uses the same `read_mts160` and marker maths as `sim_node`, but takes the pose from Gazebo's physics instead of integrating `/cmd_vel`. The mounting position is the `mts160_x` parameter, 0.30 m ahead of the axle (the CAD housing centre) from `geometry.yaml`.
 - **Obstacle stop** (`agv_control/obstacle_stop`): the only `/cmd_vel` publisher.
@@ -200,6 +201,7 @@ and it returns to `IDLE` when the `Explore` goal ends.
 | `/ultrasonic/<corner>` | `sensor_msgs/Range` | – | `ultrasonic_sim` |
 | `/gazebo/ground_truth` | `tf2_msgs/TFMessage` | – | Gazebo `PosePublisher` via the bridge |
 | `/tf` | `tf2_msgs/TFMessage` | `sim_node` (`odom → base_link`), `robot_state_publisher` | `wheel_odometry` (`odom → base_link`), `robot_state_publisher` |
+| `/imu` | `sensor_msgs/Imu` | – | Gazebo IMU (ICM-20948 noise) via the bridge |
 | `/joint_states` | `sensor_msgs/JointState` | `joint_state_publisher` (zeros) | Gazebo `JointStatePublisher` via the bridge |
 | `/tape_map`, `/sensor_markers` | `visualization_msgs` | `sim_node` | – |
 

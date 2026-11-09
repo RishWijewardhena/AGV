@@ -128,7 +128,8 @@
                 stud_xyz="0.0001 0.0004 -0.0052" stud_rpy="-1.5708 0 1.5708" base_xyz="0.0001 0.0004 -0.0052"
                 fork_xyz="0.0001 0.0004 -0.0167" wheel_xyz="0 0 -0.0020" wheel_rpy="0 0 1.5708"/>
 
-  <!-- Sensor frames, fixed to base_link. The MTS160 and the lidar are drawn in body.dae. -->
+  <!-- Sensor frames, fixed to base_link. The MTS160 and the lidar are drawn in body.dae; the IMU is not
+       in the CAD yet. -->
   <xacro:macro name="sensor_frame" params="name pose">
     <link name="${name}"/>
     <joint name="${name}_joint" type="fixed">
@@ -138,6 +139,7 @@
   </xacro:macro>
   <xacro:sensor_frame name="mts160_link" pose="${g['mts160']}"/>
   <xacro:sensor_frame name="lidar_link" pose="${g['lidar']}"/>
+  <xacro:sensor_frame name="imu_link" pose="${g['imu']}"/>
   <xacro:sensor_frame name="ultrasonic_front_left_link" pose="${g['ultrasonic']['front_left']}"/>
   <xacro:sensor_frame name="ultrasonic_front_right_link" pose="${g['ultrasonic']['front_right']}"/>
   <xacro:sensor_frame name="ultrasonic_rear_left_link" pose="${g['ultrasonic']['rear_left']}"/>

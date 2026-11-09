@@ -7,7 +7,11 @@ dependency on Gazebo, RViz, simulated pose, or `agv_sim`.
   and the `~/explore` action server.
 - `obstacle_stop`: stop-and-wait gate using four `sensor_msgs/Range` topics.
 - `wheel_odometry`: `/wheel/odom` and the `odom → base_link` transform from the drive-wheel
-  joint angles (`odometry.py`); wheel size and spacing come from `agv_description`.
+  joint angles (`odometry.py`); wheel size and spacing come from `agv_description`. With
+  `imu_topic` set, the heading comes from the gyro and the wheels give only the distance.
+  The gyro bias is learnt whenever the wheels stand still (0.1 s without an encoder count),
+  and the heading holds still then; until 1 s of still samples is in, the wheels give the
+  heading. Trips and explored maps therefore use the gyro's heading.
 - `tape_recorder`: logs junction, station and turn events with wheel odometry
   (`trip.py`); `~/save_trip` (`std_srvs/Trigger`) writes the trip JSON.
 - `build_map` (`map_builder.py`): turns one or more trips into a junction graph.
@@ -89,8 +93,9 @@ taught map instead.
 The folder separation is not hardware commissioning. The follower still estimates
 spin angle from commanded speed and fixed message periods, and its track
 subscription must be made compatible with the vendor driver's best-effort QoS
-before connecting that driver. Odometry-based turns, calibrated sensor placement,
-motor limits/watchdogs, and hardware validation remain separate work.
+before connecting that driver. An ICM-20948 driver publishing `sensor_msgs/Imu`,
+gyro scale calibration, odometry-based turns, calibrated sensor placement, motor
+limits/watchdogs, and hardware validation remain separate work.
 
 Build from `ros2_ws`, never from this package directory. The build target
 `--packages-up-to agv_control` brings in `naviq_msgs` and `agv_interfaces` without

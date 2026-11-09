@@ -32,6 +32,7 @@ odom ─▶ base_link            wheel_odometry (Gazebo, hardware) or sim_node (
         ├── <corner>_caster_mount ─▶ _swivel ─▶ _wheel    spring, swivel, wheel joints
         ├── mts160_link      (0.30, 0, 0.038)
         ├── lidar_link       (0.312, 0, 0.317)
+        ├── imu_link         (0, 0, 0.10), provisional
         └── ultrasonic_<corner>_link   (±0.38, ±0.18, 0.105), rear ones face backwards
 ```
 
@@ -52,6 +53,7 @@ CAD meshes; physics uses simple shapes.
 | MTS160 | in the CAD body: housing x = 0.285–0.320 m, bottom 38 mm above the floor |
 | Ultrasonic | 4 `gpu_lidar` fans in Gazebo (±30° like the URM09, 0.02–5 m, 10 Hz), 6 mm outside the CAD sensor faces |
 | Lidar | RPLidar head in the CAD; 360°, 0.15–6 m, 5.5 Hz in Gazebo |
+| IMU | ICM-20948, not in the CAD yet. Gazebo at 100 Hz from datasheet DS-000189: gyro noise 0.015 °/s/√Hz and a random fixed offset (~1.7 °/s typical, ±5 °/s allowed); accelerometer 230 µg/√Hz, ±25 mg offset. Temperature drift is not simulated: Gazebo's dynamic-bias model wanders about ten times faster than the datasheet |
 | Drive limits (Gazebo) | 0.5 m/s, 1 rad/s |
 
 Each caster is a chain: the stem and top plate ride on the spring, the fork swivels freely, and
@@ -94,3 +96,4 @@ small meshes (wheels, casters, rails) are the export's own files.
 - The centre of mass comes from the CAD, whose masses are off by a factor of two. Weighing the drive axle alone would place it.
 - The caster springs and the fork damping are provisional values. On the real robot the drive wheels have shocks instead; the model has none.
 - No `ros2_control` block yet; the joint names are ready for one.
+- The IMU position is a placeholder until it is in the CAD; only its yaw axis matters for the heading. The gyro's ±1.5 % scale tolerance is not simulated: calibrate it on the robot (for example ten spins on the spot against the tape).

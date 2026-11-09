@@ -46,6 +46,7 @@ def test_frames_match_geometry():
     root, g = robot(False), load()
     assert joint(root, 'mts160_link_joint') == pytest.approx(g['mts160'])
     assert joint(root, 'lidar_link_joint') == pytest.approx(g['lidar'])
+    assert joint(root, 'imu_link_joint') == pytest.approx(g['imu'])
     for corner, pose in g['ultrasonic'].items():
         assert joint(root, f'ultrasonic_{corner}_link_joint') == pytest.approx(pose)
     left, right = joint(root, 'left_wheel_joint'), joint(root, 'right_wheel_joint')

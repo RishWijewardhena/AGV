@@ -66,6 +66,33 @@
     </sensor>
   </gazebo>
 
+  <!-- ICM-20948 (datasheet DS-000189 v1.3) at 100 Hz with a ~50 Hz filter. Gyro: 0.015 dps/sqrt(Hz)
+       noise and a fixed zero-rate offset (here a random ~1.7 dps; up to +/-5 dps allowed), which
+       wheel_odometry learns while the robot stands. Accelerometer: 230 ug/sqrt(Hz), +/-25 mg offset.
+       Gazebo's dynamic bias is left out: it wanders about ten times faster than the datasheet's
+       temperature drift (+/-0.05 dps/degC), which on the robot is relearnt at every stop. The
+       +/-1.5 % gyro scale tolerance is not modelled either; calibrate it on the robot. -->
+  <gazebo reference="imu_link">
+    <sensor name="imu" type="imu">
+      <topic>/imu</topic>
+      <gz_frame_id>imu_link</gz_frame_id>
+      <always_on>true</always_on>
+      <update_rate>100</update_rate>
+      <imu>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0</mean><stddev>0.0019</stddev><bias_mean>0</bias_mean><bias_stddev>0.03</bias_stddev></noise></x>
+          <y><noise type="gaussian"><mean>0</mean><stddev>0.0019</stddev><bias_mean>0</bias_mean><bias_stddev>0.03</bias_stddev></noise></y>
+          <z><noise type="gaussian"><mean>0</mean><stddev>0.0019</stddev><bias_mean>0</bias_mean><bias_stddev>0.03</bias_stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0</mean><stddev>0.016</stddev><bias_mean>0</bias_mean><bias_stddev>0.25</bias_stddev></noise></x>
+          <y><noise type="gaussian"><mean>0</mean><stddev>0.016</stddev><bias_mean>0</bias_mean><bias_stddev>0.25</bias_stddev></noise></y>
+          <z><noise type="gaussian"><mean>0</mean><stddev>0.016</stddev><bias_mean>0</bias_mean><bias_stddev>0.25</bias_stddev></noise></z>
+        </linear_acceleration>
+      </imu>
+    </sensor>
+  </gazebo>
+
   <gazebo>
     <!-- Ground truth on a private topic; never replaces wheel odometry or /tf. -->
     <plugin filename="gz-sim-pose-publisher-system" name="gz::sim::systems::PosePublisher">
